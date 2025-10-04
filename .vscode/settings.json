@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "gfc_types.h": "c"
+        "gfc_types.h": "c",
+        "simple_logger.h": "c"
     }
 }
