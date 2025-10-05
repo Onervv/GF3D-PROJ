@@ -11,7 +11,7 @@
 #include "gfc_string.h"
 #include "gfc_actions.h"
 
-#include "gf2d_sprite.h"
+#include "gf2d_sprite.h"  
 #include "gf2d_font.h"
 #include "gf2d_actor.h"
 #include "gf2d_mouse.h"
@@ -19,6 +19,9 @@
 #include "gf3d_vgraphics.h"
 #include "gf3d_pipeline.h"
 #include "gf3d_swapchain.h"
+
+#include "gf3d_camera.h"
+#include "gf3d_mesh.h"
 
 extern int __DEBUG;
 
@@ -38,7 +41,10 @@ void exitGame()
 int main(int argc,char *argv[])
 {
     //local variables
-    Sprite *bg;
+    Mesh* mesh;
+    Texture* texture;
+    GFC_Vector3D cam = { 0, 50, 0 };
+    GFC_Matrix4 id, dinoM;
     //initializtion    
     parse_arguments(argc,argv);
     init_logger("gf3d.log",0);
@@ -47,7 +53,7 @@ int main(int argc,char *argv[])
     gfc_input_init("config/input.cfg");
     gfc_config_def_init();
     gfc_action_init(1024);
-    //gf3d init
+    //gf3d init   
     gf3d_vgraphics_init("config/setup.cfg");
     gf2d_font_init("config/font.cfg");
     gf2d_actor_init(1000);
@@ -55,20 +61,32 @@ int main(int argc,char *argv[])
     //game init
     srand(SDL_GetTicks());
     slog_sync();
-    bg = gf2d_sprite_load_image("images/bg_flat.png");
+    //bg = gf2d_sprite_load_image("images/bg_flat.png");
     gf2d_mouse_load("actors/mouse.actor");
+    
+    mesh = gf3d_mesh_load_obj("models/dino/dino.obj"); 
+    texture = gf3d_texture_load("models/dino/dino.png");
+    gfc_matrix4_identity(id);      
+
+    gf3d_camera_look_at(gfc_vector3d(0, 0, 0), &cam); 
     // main game loop    
     while(!_done)
     {
         gfc_input_update();
         gf2d_mouse_update();
         gf2d_font_update();
+        //world updates
+
         //camera updaes
+        gf3d_camera_update_view();
+
         gf3d_vgraphics_render_start();
+                //3D draws
+                gf3d_mesh_draw(mesh, id, GFC_COLOR_WHITE, texture);
                 //2D draws
-                gf2d_sprite_draw_image(bg,gfc_vector2d(0,0));
                 gf2d_font_draw_line_tag("ALT+F4 to exit",FT_H1,GFC_COLOR_WHITE, gfc_vector2d(10,10));
                 gf2d_mouse_draw();
+            
         gf3d_vgraphics_render_end();
         if (gfc_input_command_down("exit"))_done = 1; // exit condition
         game_frame_delay();
@@ -76,12 +94,15 @@ int main(int argc,char *argv[])
     vkDeviceWaitIdle(gf3d_vgraphics_get_default_logical_device());    
     //cleanup
     slog("gf3d program end");
+    gf3d_mesh_free(mesh);
+    gf3d_texture_free(texture);
     exit(0);
     slog_sync();
     return 0;
 }
 
-void parse_arguments(int argc,char *argv[])
+
+void parse_arguments(int argc,char *argv[]) 
 {
     int a;
 
@@ -100,7 +121,7 @@ void game_frame_delay()
     static Uint32 now;
     static Uint32 then;
     then = now;
-    slog_sync();// make sure logs get written when we have time to write it
+    slog_sync();
     now = SDL_GetTicks();
     diff = (now - then);
     if (diff < frame_delay)

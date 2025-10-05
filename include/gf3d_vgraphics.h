@@ -10,7 +10,6 @@
 
 #define GF3D_VGRAPHICS_DISCRETE 1
 //Choosing whether to use discrete [1] or integrated graphics [0]
-//NOTE: make this configurable
 
 typedef struct
 {
@@ -160,5 +159,7 @@ SDL_Surface *gf3d_vgraphics_create_surface(Uint32 w,Uint32 h);
  * @note this will clear the data of the original surface if it is successful automatically.
  */
 SDL_Surface *gf3d_vgraphics_screen_convert(SDL_Surface **surface);
+
+void gf3d_vgraphics_set_view(GFC_Matrix4 view);
 
 #endif
