@@ -10,7 +10,6 @@
 
 #define GF3D_VGRAPHICS_DISCRETE 1
 //Choosing whether to use discrete [1] or integrated graphics [0]
-//NOTE: make this configurable
 
 typedef struct
 {
