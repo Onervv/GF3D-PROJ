@@ -41,16 +41,20 @@ int main(int argc,char *argv[])
 {
     //local variables
     Mesh *mesh;
-    GFC_Vector3D cam = {0,10,0};
-    GFC_Matrix4 id;
+    Texture *texture;
+    GFC_Vector3D cam = {0,30,0};
+    GFC_Matrix4 id, dinoM;
+
     //initializtion    
     parse_arguments(argc,argv);
     init_logger("gf3d.log",0);
     slog("gf3d begin");
+
     //gfc init
     gfc_input_init("config/input.cfg");
     gfc_config_def_init();
     gfc_action_init(1024);
+
     //gf3d init
     gf3d_vgraphics_init("config/setup.cfg");
     gf2d_font_init("config/font.cfg");
@@ -59,12 +63,14 @@ int main(int argc,char *argv[])
     //game init
     srand(SDL_GetTicks());
     slog_sync();
-  //  gf2d_mouse_load("actors/mouse.actor");
-    // main game loop    
-    mesh = gf3d_mesh_load("models/dino/dino.obj");
-    gfc_matrix4_identity(id);
+
+    gf2d_mouse_load("actors/mouse.actor");   
+    mesh = gf3d_mesh_load_obj("models/dino/dino.obj");
+    texture = gf3d_texture_load("models/dino/dino.png");
+    gfc_matrix4_identity(id); 
     
     gf3d_camera_look_at(gfc_vector3d(0,0,0),&cam);
+    // loop start here
     while(!_done)
     {
         gfc_input_update();
@@ -74,12 +80,13 @@ int main(int argc,char *argv[])
         
         //camera updaes
         gf3d_camera_update_view();
+
         gf3d_vgraphics_render_start();
                 //3D draws
-                gf3d_mesh_draw(mesh,id,GFC_COLOR_WHITE,NULL);
+                gf3d_mesh_draw(mesh,id,GFC_COLOR_WHITE,texture);
                 //2D draws
-                //gf2d_font_draw_line_tag("ALT+F4 to exit",FT_H1,GFC_COLOR_WHITE, gfc_vector2d(10,10));
-                //gf2d_mouse_draw();
+                gf2d_font_draw_line_tag("ALT+F4 to exit",FT_H1,GFC_COLOR_WHITE, gfc_vector2d(10,10));
+                gf2d_mouse_draw();
         gf3d_vgraphics_render_end();
         if (gfc_input_command_down("exit"))_done = 1; // exit condition
         game_frame_delay();
@@ -87,6 +94,8 @@ int main(int argc,char *argv[])
     vkDeviceWaitIdle(gf3d_vgraphics_get_default_logical_device());    
     //cleanup
     slog("gf3d program end");
+    gf3d_mesh_free(mesh);
+    gf3d_texture_free(texture);
     exit(0);
     slog_sync();
     return 0;

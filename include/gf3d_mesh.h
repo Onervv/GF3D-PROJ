@@ -77,7 +77,7 @@ Mesh *gf3d_mesh_new();
  * @param filename the name of the file to load
  * @return NULL on error or Mesh data
  */
-Mesh *gf3d_mesh_load(const char *filename);
+Mesh *gf3d_mesh_load_obj(const char *filename);
 
 /**
  * @brief draw a mesh given the parameters
@@ -108,6 +108,15 @@ VkVertexInputBindingDescription * gf3d_mesh_get_bind_description();
  * @brief free a mesh that has been loaded from memory
  */
 void gf3d_mesh_free(Mesh *mesh);
+
+/**
+ * @brief queue up a render for the current draw frame
+ * @param mesh the mesh to render
+ * @param pipe the pipeline to use
+ * @param uboData the data to use to draw the mesh
+ * @param texture texture data to use
+ */
+void gf3d_mesh_queue_render(Mesh *mesh,Pipeline *pipe,void *uboData,Texture *texture);
 
 /**
  * @brief create a mesh's internal buffers based on vertices
