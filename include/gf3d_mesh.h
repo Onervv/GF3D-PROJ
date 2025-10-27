@@ -11,6 +11,8 @@
 #include "gfc_primitives.h"
 
 #include "gf3d_pipeline.h"
+#include "gf3d_vgraphics.h"
+#include "gf3d_buffers.h"
 
 
 //forward declaration:
@@ -53,6 +55,7 @@ typedef struct
 {
     GFC_TextLine        filename;
     Uint32              _refCount;
+    Uint8               _inuse;
     GFC_List           *primitives;
     GFC_Box             bounds;
 }Mesh;
@@ -63,6 +66,11 @@ typedef struct
  * @note keep in mind that many models will be comprised of multiple sub meshes.  So this number may need to be very large
  */
 void gf3d_mesh_init(Uint32 mesh_max);
+
+/**
+ * @brief free up and close the mesh system
+ */
+void gf3d_mesh_close();
 
 /**
  * @brief get a new empty model
@@ -77,12 +85,26 @@ Mesh *gf3d_mesh_new();
  * @param filename the name of the file to load
  * @return NULL on error or Mesh data
  */
-Mesh *gf3d_mesh_load_obj(const char *filename);
+Mesh *gf3d_mesh_load(const char *filename);
+
+/*
+* @brief draw the mesh with these parameters
+*/
+void gf3d_mesh_draw(Mesh* mesh, GFC_Matrix4 modelMat, GFC_Color mod, Texture* texture);
+
+//@brief draw all meshes loaded into the mesh manager
+void gf3d_mesh_draw_all();
 
 /**
- * @brief draw a mesh given the parameters
+ * @brief queue up a render for the current draw frame
+ * @param mesh the mesh to render
+ * @param pipe the pipeline to use
+ * @param uboData the data to use to draw the mesh
+ * @param texture texture data to use
  */
-void gf3d_mesh_draw(Mesh *mesh,GFC_Matrix4 modelMat,GFC_Color mod,Texture *texture);
+void gf3d_mesh_queue_render(Mesh* mesh, Pipeline* pipe, void* uboData, Texture* texture);
+
+void gf3d_mesh_primitive_queue_render(MeshPrimitive* primitive, Pipeline* pipe, void* uboData, Texture* texture);
 
 /**
  * @brief allocate a zero initialized mesh primitive
@@ -96,7 +118,7 @@ MeshPrimitive *gf3d_mesh_primitive_new();
  * @param count (optional, output) the number of attributes
  * @return a pointer to a vertex input attribute description array
  */
-VkVertexInputAttributeDescription * gf3d_mesh_get_attribute_descriptions(Uint32 *count);
+VkVertexInputAttributeDescription * gf3d_mesh_get_attribute_descriptions(Uint32* count);
 
 /**
  * @brief get the binding description for mesh based rendering
@@ -110,20 +132,18 @@ VkVertexInputBindingDescription * gf3d_mesh_get_bind_description();
 void gf3d_mesh_free(Mesh *mesh);
 
 /**
- * @brief queue up a render for the current draw frame
- * @param mesh the mesh to render
- * @param pipe the pipeline to use
- * @param uboData the data to use to draw the mesh
- * @param texture texture data to use
- */
-void gf3d_mesh_queue_render(Mesh *mesh,Pipeline *pipe,void *uboData,Texture *texture);
-
-/**
  * @brief create a mesh's internal buffers based on vertices
  * @param primitive the mesh primitive to populate
  * @note the primitive must have the objData set and it must have be organizes in buffer order
  */
-void gf3d_mesh_create_vertex_buffer_from_vertices(MeshPrimitive *primitive);
+void gf3d_mesh_primitive_create_vertex_buffer(MeshPrimitive* primitive);
+
+/**
+ * @brief create a mesh's internal buffers based on faces
+ * @param primitive the mesh primitive to populate
+ * @note the primitive must have the objData set and it must have be organizes in buffer order
+ */
+void gf3d_mesh_primitive_create_face_buffer(MeshPrimitive* primitive);
 
 /**
  * @brief get the pipeline that is used to render basic 3d meshes

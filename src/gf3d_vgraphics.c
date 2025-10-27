@@ -27,8 +27,8 @@
 #include "gf3d_pipeline.h"
 #include "gf3d_commands.h"
 #include "gf3d_texture.h"
-#include "gf3d_mesh.h"
 #include "gf2d_sprite.h"
+#include "gf3d_mesh.h"
 
 #include "gf3d_vgraphics.h"
 
@@ -201,7 +201,7 @@ void gf3d_vgraphics_init(const char *config)
 
     gf3d_vgraphics.enable_2d = 1;
     gf3d_mesh_init(1024);
-//    gf2d_sprite_manager_init(1024);
+    gf2d_sprite_manager_init(1024);
     renderPipe = gf3d_mesh_get_pipeline();
 
     gf3d_swapchain_create_depth_image();
@@ -581,15 +581,15 @@ void gf3d_vgraphics_get_projection_matrix(GFC_Matrix4 *proj)
     memcpy(proj,gf3d_vgraphics.ubo.proj,sizeof(GFC_Matrix4));
 }
 
-void gf3d_vgraphics_set_view(GFC_Matrix4 view)
-{
-    gfc_matrix4_copy(gf3d_vgraphics.ubo.view,view);
-}
-
 void gf3d_vgraphics_get_view(GFC_Matrix4 *view)
 {
     if (!view)return;
     memcpy(view,gf3d_vgraphics.ubo.view,sizeof(GFC_Matrix4));
+}
+
+void gf3d_vgraphics_set_view(GFC_Matrix4* view) {
+    if (!view)return;
+    memcpy(gf3d_vgraphics.ubo.view, view, sizeof(GFC_Matrix4));
 }
 
 
@@ -605,7 +605,6 @@ void gf3d_vgraphics_rotate_camera(float degrees)
         gf3d_vgraphics.ubo.view,
         degrees,
         gfc_vector3d(0,0,1));
-
 }
 
 Command *gf3d_vgraphics_get_graphics_command_pool()
@@ -705,4 +704,3 @@ GFC_Vector3D vgraphics_3d_position_to_screen_depth(GFC_Vector3D position)
 
 
 /*eol@eof*/
-

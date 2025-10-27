@@ -55,7 +55,7 @@ void entity_system_close() {
 	}
 }
 
-void entity_system_init(Uint32 max_ents) {
+void entity_system_init(Uint16 max_ents) {
 	if (!max_ents) {
 		slog("Cannot initialize an entity system with zero entities");
 	}

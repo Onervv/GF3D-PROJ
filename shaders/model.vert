@@ -3,9 +3,9 @@
 
 layout(binding = 0) uniform UniformBufferObject
 {
-    mat4     model;
-    mat4     view;
-    mat4     proj;
+    mat4    model;
+    mat4    view;
+    mat4    proj;
     vec4    color;
     vec4    camera;
 } ubo;
@@ -23,17 +23,17 @@ layout(location = 0) out vec2 fragTexCoord;
 layout(location = 1) out vec3 outNormal;
 layout(location = 2) out vec4 colorMod;
 layout(location = 3) out vec4 worldPosition;
-layout(location = 4) out vec4 cameraPosition;
+layout(location = 4) out vec4 cameraPos;
 
 void main()
 {
     mat3 normalMatrix;
     mat4 mvp = ubo.proj * ubo.view * ubo.model;
-    gl_Position = mvp * vec4(inPosition, 1.0);
+    gl_Position =  mvp * vec4(inPosition, 1.0); 
     normalMatrix = transpose(inverse(mat3(ubo.model)));
     outNormal = normalize(inNormal * normalMatrix);
     colorMod = ubo.color;
-    cameraPosition = ubo.camera;
-    worldPosition = vec4(inPosition, 1.0);
+    cameraPos = ubo.camera;
+    worldPosition = vec4(inPosition,1.0);
     fragTexCoord = inTexCoord;
 }

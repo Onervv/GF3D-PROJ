@@ -1,66 +1,59 @@
 #ifndef __ENTITY_H__
-
 #define __ENTITY_H__
 
 #include "gfc_text.h"
-#include "gfc_matrix.h"
+#include "gfc_primitives.h"
+
 #include "gf3d_mesh.h"
-#include "gfc_vector.h"
 
+typedef struct Entity_S {
+	Uint8 _inuse;
+	GFC_TextLine name;
+	Mesh* mesh;
+	Texture* texture;
+	GFC_Color color;
+	GFC_Matrix4 matrix;
+	GFC_Vector3D position;
+	GFC_Vector3D rotation;
+	GFC_Vector3D scale;
+	GFC_Box bounds;
+	GFC_Vector3D velocity;
+	void (*draw)(struct Entity_S* self);
+	void (*think)(struct Entity_S* self);
+	void (*update)(struct Entity_S* self);
+	void* data;
+}Entity;
 
-typedef struct Entity_S{
-    Uint8               _inuse;
-    GFC_TextLine        name;
-
-    Mesh               *mesh;
-    Texture            *texture;
-    GFC_Color          color;
-
-    GFC_Matrix4        matrix;
-    GFC_Vector3D       position;
-    GFC_Vector3D       rotation;
-    GFC_Vector3D       scale;
-
-    GFC_Box            bounds;
-    void               (*draw)(struct Entity_S *self);
-    void               (*think)(struct Entity_S *self);
-    void               (*update)(struct Entity_S *self);
-    
-} Entity;
-
-
-/**
- * @brief: get a pointer to a new, blank entity
- * @return: NULL on out of memory or other orrer; a pointer to the blank entity otherwise.
+/*@brief creates a new blank entity
+* @return NULL on error or no memory, otherwise the new entity
 */
-Entity *entitynew();
+Entity* entity_new();
 
-/**
- * @brief: free an entity previously allocated from the masterlist
- * @param: ent - pointer to the entity to free
- * @NOTE: the memory address should be set to NULL
+/*@brief frees the passed entity
+* @param e the entity to free
 */
-void entity_free(Entity *ent);  // use memset to clear mesh andtexture pointers
+void entity_free(Entity* e);
 
-/**
- * @brief initalize the entity subsystem 
- * @param max_ents how many to support concurrently 
- */
-void entity_system_init(Uint32 max_ents);
-
-/**
- * @brief: draw all entitys in master list
+/*@brief initializes the entity manager
+* @param max_ents the number of ents allocated in the manager
 */
-void entity_draw_all();
+void entity_system_init(Uint16 max_ents);
 
-/**
- * @brief: draw an entity
- * @param: ent - pointer to ent to draw
-*/
-void entity_draw(Entity *ent);
+void entity_system_close();
+
+void entity_move(Entity* self);
+
+void entity_draw_all(GFC_Vector3D lightPos, GFC_Color colorMod);
+
+void entity_think(Entity* self);
 
 void entity_think_all();
 
+void entity_update(Entity* self);
+
 void entity_update_all();
 
-#endif // __ENTITY_H__
+
+
+
+#endif

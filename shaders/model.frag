@@ -7,13 +7,12 @@ layout(location = 0) in vec2 fragTexCoord;
 layout(location = 1) in vec3 outNormal;
 layout(location = 2) in vec4 colorMod;
 layout(location = 3) in vec4 worldPosition;
-layout(location = 4) in vec4 cameraPosition;
+layout(location = 4) in vec4 cameraPos;
 
 layout(location = 0) out vec4 outColor;
-
 
 void main()
 {
     vec4 texColor = texture(texSampler, fragTexCoord);
-    outColor = texColor * colorMod;
+    outColor = texColor;
 }
