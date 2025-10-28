@@ -85,7 +85,7 @@ int main(int argc,char *argv[])
                 gf2d_font_draw_line_tag("ALT+F4 to exit",FT_H1,GFC_COLOR_WHITE, gfc_vector2d(10,10));
                 gf2d_mouse_draw();
         gf3d_vgraphics_render_end();
-        if (gfc_input_command_down("exit"))_done = 1; // exit condition
+        if (gfc_input_command_down("exit"))_done = 1; // exit here
         game_frame_delay();
     }    
     vkDeviceWaitIdle(gf3d_vgraphics_get_default_logical_device());    

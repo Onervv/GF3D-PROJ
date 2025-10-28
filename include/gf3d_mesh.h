@@ -18,7 +18,7 @@
 //forward declaration:
 typedef struct ObjData_S ObjData;
 
-//absolute basics of the mesh information sent to the graphics card
+//mesh information that goes to GPU 
 typedef struct
 {
     GFC_Matrix4     model;
