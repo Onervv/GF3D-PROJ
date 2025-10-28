@@ -19,12 +19,13 @@
 extern int __DEBUG;
 
 typedef struct {
-    Mesh*       mesh_list;
-    Uint32      max_meshes;
-    Uint32      chain_length;
-    VkDevice    device;
-    Pipeline*   pipe;
-    VkBuffer    faceBuffer;
+    Mesh*           mesh_list;
+    Uint32          max_meshes;
+    Uint32          chain_length;
+    VkDevice        device;
+    Pipeline*       pipe;
+    Pipeline*       skyPipe;
+    VkBuffer        faceBuffer;
     VkDeviceMemory  faceBufferMemory;
     VkVertexInputAttributeDescription   attributeDescriptions[MESH_ATTRIBUTE_COUNT];
     VkVertexInputBindingDescription     bindingDescription;
@@ -123,7 +124,7 @@ Mesh* gf3d_mesh_load(const char* filename) {
     return mesh;
 }
 
-void gf3d_mesh_draw(Mesh* mesh, GFC_Matrix4 modelMat, GFC_Color mod, Texture* texture) {
+void gf3d_mesh_draw(Mesh* mesh, GFC_Matrix4 modelMat, GFC_Color mod, Texture* texture, GFC_Vector3D lightPos, GFC_Color lightColor) {
     MeshUBO ubo = { 0 };
     if (!mesh) return;
 
@@ -132,9 +133,36 @@ void gf3d_mesh_draw(Mesh* mesh, GFC_Matrix4 modelMat, GFC_Color mod, Texture* te
     gf3d_vgraphics_get_view(&ubo.view);
     gf3d_vgraphics_get_projection_matrix(&ubo.proj);
     ubo.color = gfc_color_to_vector4f(mod);
+    ubo.lightColor = gfc_color_to_vector4(lightColor);
+    ubo.lightPos = gfc_vector3dw(lightPos, 1.0);
     ubo.camera = gfc_vector3dw(gf3d_camera_get_position(), 1.0);
-    gfc_matrix4_slog(modelMat);
     gf3d_mesh_queue_render(mesh, gf3d_mesh.pipe, &ubo, texture);
+}
+
+void gf3d_mesh_sky_draw(Mesh* sky, GFC_Matrix4 modelMat, GFC_Color mod, Texture* texture) {
+    MeshUBO ubo = { 0 };
+    if (!sky) return;
+
+    gfc_matrix4_copy(ubo.model, modelMat);
+    gf3d_vgraphics_get_view(&ubo.view);
+    ubo.view[0][3] = 0;
+    ubo.view[1][3] = 0;
+    ubo.view[2][3] = 0;
+    ubo.view[3][0] = 0;
+    ubo.view[3][1] = 0;
+    ubo.view[3][2] = 0;
+    gf3d_vgraphics_get_projection_matrix(&ubo.proj);
+    ubo.color = gfc_color_to_vector4f(mod);
+    
+    gf3d_mesh_queue_render(sky, gf3d_mesh.skyPipe, &ubo, texture);
+}
+
+Mesh* gf3d_mesh_get_by_filename(const char* filename) {
+    int i;
+    for (i = 0; i < gf3d_mesh.max_meshes; i++) {
+        if (!gfc_line_cmp(filename, gf3d_mesh.mesh_list[i].filename)) return &gf3d_mesh.mesh_list[i];
+    }
+    return NULL;
 }
 
 void gf3d_mesh_queue_render(Mesh* mesh, Pipeline* pipe, void* uboData, Texture* texture) {

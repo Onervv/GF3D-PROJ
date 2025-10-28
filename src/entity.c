@@ -3,6 +3,7 @@
 #include "entity.h"
 
 
+
 typedef struct {
     Entity *entity_list;
     Uint32  entity_max;
