@@ -54,7 +54,7 @@ void gf3d_mesh_init(Uint32 meshMax) {
     gf3d_mesh.device = gf3d_vgraphics_get_default_logical_device();
 
     gf3d_mesh_get_attribute_descriptions(&count);
-    //pipeline stuff
+    // Duble check this
     gf3d_mesh.pipe = gf3d_pipeline_create_from_config(
         gf3d_vgraphics_get_default_logical_device(),
         "config/model_pipeline.cfg",
@@ -67,7 +67,8 @@ void gf3d_mesh_init(Uint32 meshMax) {
         VK_INDEX_TYPE_UINT16);
     slog("mesh system initialized");
 }
-//populate
+
+// Populate this
 void gf3d_mesh_close(){ 
 
 }
@@ -84,7 +85,6 @@ Mesh* gf3d_mesh_new() {
     return NULL;
 }
 
-//WORK WITH REFCOUNT NOT INSUE
 Mesh* gf3d_mesh_load(const char* filename) {
     ObjData* objectData;
     MeshPrimitive* prim;
@@ -92,7 +92,7 @@ Mesh* gf3d_mesh_load(const char* filename) {
     
     if (!filename) return NULL;
     slog("loading object data...");
-    objectData = gf3d_obj_load_from_file(filename); //YOU.
+    objectData = gf3d_obj_load_from_file(filename); 
     if (!objectData) { 
         slog("failed to parse obj file %s", filename); slog_sync();
         return NULL;
@@ -188,7 +188,7 @@ VkVertexInputAttributeDescription* gf3d_mesh_get_attribute_descriptions(Uint32* 
 
     if (count)*count = MESH_ATTRIBUTE_COUNT;
     slog("Done attribute desc");
-    return &gf3d_mesh.attributeDescriptions;
+    return gf3d_mesh.attributeDescriptions;
 }
 
 VkVertexInputBindingDescription* gf3d_mesh_get_bind_description() {
@@ -208,8 +208,7 @@ void gf3d_mesh_free(Mesh* mesh) {
     GFC_Box             bounds; */
 
     gfc_list_delete(mesh->primitives);
-    //memset?
-    free(mesh);
+    free(mesh); // we free 
 }
 
 void gf3d_mesh_primitive_create_vertex_buffer(MeshPrimitive* primitive) {
@@ -231,7 +230,7 @@ void gf3d_mesh_primitive_create_vertex_buffer(MeshPrimitive* primitive) {
     vertices = primitive->objData->faceVertices;
     vcount = primitive->objData->face_vert_count;
     bufferSize = sizeof(Vertex) * vcount;
-    //create staging data
+    // STAGING 
     gf3d_buffer_create(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         &stagingBuffer, &stagingBufferMemory);
 
@@ -239,12 +238,12 @@ void gf3d_mesh_primitive_create_vertex_buffer(MeshPrimitive* primitive) {
     memcpy(data, vertices, (size_t)bufferSize);
     vkUnmapMemory(device, stagingBufferMemory);
 
-    //copy staged data to the primitive
+    
     gf3d_buffer_create(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         &primitive->vertexBuffer, &primitive->vertexBufferMemory);
 
     gf3d_buffer_copy(stagingBuffer, primitive->vertexBuffer, bufferSize);
-
+    // After Copy Destory Buffer
     vkDestroyBuffer(device, stagingBuffer, NULL);
     vkFreeMemory(device, stagingBufferMemory, NULL);
 
@@ -268,7 +267,7 @@ void gf3d_mesh_primitive_create_face_buffer(MeshPrimitive* primitive) {
         return;
     }
 
-    faces = primitive->objData->outFace; //i think its outface based on this being seperated like the vertices in the struct
+    faces = primitive->objData->outFace; 
     fcount = primitive->objData->face_count;
     bufferSize = sizeof(Face) * fcount;
     //create staging data
