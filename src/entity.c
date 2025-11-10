@@ -62,19 +62,28 @@ void entity_system_close() {
 void entity_move(Entity* self) {
 	GFC_Box bounds;
 	GFC_Vector3D positionPre, positionPost, contact;
+	GFC_Vector2D direction2d;
+
+	direction2d = gfc_vector2d_from_angle(self->rotation.z);
+	gfc_vector2d_normalize(&direction2d);
 
 	gfc_vector3d_copy(positionPre, self->position);
 	gfc_vector3d_add(positionPost, self->position, self->velocity);
 
 	if (world_edge_test(get_the_world(), positionPre, positionPost, &contact)) {
-		slog("touching floor");
+		slog("CONTACT %f, %f, %f", contact.x, contact.y, contact.z);
+		
 	}
 	else {
 		gfc_vector3d_copy(self->position, positionPost);
 	}
-
+	
 	gfc_box_cpy(bounds, self->bounds); //start of collision checking
 	gfc_vector3d_add(bounds, bounds, self->velocity);
+}
+
+Uint8 entity_floor_check(Entity* self) {
+
 }
 
 void entity_draw(Entity* ent, GFC_Vector3D lightPos, GFC_Color colorMod) {

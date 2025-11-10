@@ -2,6 +2,7 @@
 #include "gfc_input.h"
 
 #include "player.h"
+#include "camera_entity.h"
 
 static Entity* thePlayer;
 
@@ -22,16 +23,17 @@ Entity* player_spawn(GFC_Vector3D position, GFC_Color color) {
 
 	data = gfc_allocate_array(sizeof(PlayerData), 1);
 	gfc_line_cpy(self->name, "Player");
-	self->mesh = gf3d_mesh_load("models/dino/dino.obj");
-	self->texture = gf3d_texture_load("models/dino/dino.png");
+	self->mesh = gf3d_mesh_load("models/primitives/isphere.obj");
+	self->texture = gf3d_texture_load("models/primitives/flatwhite.png");
 	self->color = color;
 	self->position = position;
-	self->rotation = gfc_vector3d(0, 0, 0);
+	self->rotation = gfc_vector3d(0, 0, -2 * GFC_PI);
 	//entity defaults to scale of 1, 1, 1
 	self->think = player_think;
 	self->update = player_update;
 
 	player_data_new(data);
+	self->data = data;
 
 	thePlayer = self; //assign static variable
 	return self;
@@ -40,7 +42,12 @@ Entity* player_spawn(GFC_Vector3D position, GFC_Color color) {
 void player_think(Entity* self) {
 	Uint32 mouseState;
 	PlayerData* data;
+
 	int mx, my;
+	GFC_Vector2D direction2d;
+	float move = 0; 
+	float moveStep = 1.5;
+
 
 	if (!self) return;
 	//data = self->data;
@@ -50,25 +57,45 @@ void player_think(Entity* self) {
 	self->velocity.y = 0;
 	self->velocity.z = 0;
 
+	if (gfc_input_command_down("panleft")) {
+		self->rotation.z += .1;
+	}
+	if (gfc_input_command_down("panright")) {
+		self->rotation.z -= .1;
+	}
+
+	direction2d = gfc_vector2d_from_angle(self->rotation.z);
+	gfc_vector2d_normalize(&direction2d);
 	if (gfc_input_command_down("moveforward")) {
-		self->velocity.y += 1;
+		move += moveStep;
 	}
 	if (gfc_input_command_down("moveback")) {
-		self->velocity.y -= 1;
+		move -= moveStep;
 	}
+	if (move) {
+		gfc_vector2d_scale(direction2d, direction2d, move);
+		gfc_vector2d_add(self->velocity, self->velocity, direction2d);
+	}
+	move = 0;
+	direction2d = gfc_vector2d_from_angle(self->rotation.z);
+	gfc_vector2d_normalize(&direction2d);
+	direction2d = gfc_vector2d_rotate(direction2d, GFC_HALF_PI);
 	if (gfc_input_command_down("moveright")) {
-		self->velocity.x += 1;
+		move -= moveStep;
 	}
 	if (gfc_input_command_down("moveleft")) {
-		self->velocity.x -= 1;
+		move += moveStep;
+	}
+	if (move) {
+		gfc_vector2d_scale(direction2d, direction2d, move);
+		gfc_vector2d_add(self->velocity, self->velocity, direction2d);
 	}
 	if (gfc_input_command_down("jump")) {
 		self->velocity.z += 1;
 	}
-
-	// Normalize now but scale later, for car movement we need magnitude to simulate amount of gas/brake
-	// dont forget to cap speed too
-	gfc_vector3d_normalize(&self->velocity);
+	if (gfc_input_command_down("crouch")) {
+		self->velocity.z -= 1;
+	}
 
 	mouseState = SDL_GetMouseState(&mx, &my);
 }
@@ -88,5 +115,5 @@ void player_update(Entity* self) {
 }
 
 void player_data_new(PlayerData* data) {
-	data = gfc_allocate_array(sizeof(PlayerData), 1);
+	data->carInventory = gfc_list_new();
 }
