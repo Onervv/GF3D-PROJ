@@ -1,0 +1,9 @@
+{
+	"world":
+	{
+		"filename": "models/terrain/ROAD.obj",
+		"texture": "models/primitives/flatwhite.png",
+		"color": [ 255, 255, 255, 255 ],
+		"lightPosition": [ 5, 0, 50 ]
+	}
+}

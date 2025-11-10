@@ -23,6 +23,7 @@
 #include "gf3d_mesh.h"
 
 #include "entity.h"
+#include "player.h"
 #include "world.h"
 
 extern int __DEBUG;
@@ -44,71 +45,69 @@ int main(int argc,char *argv[])
 {
     //local variables
     //Sprite *bg;
-    Mesh* mesh;
-    Texture* texture;
-    GFC_Vector3D cam = { 0,50,0 };
-    GFC_Matrix4 id, dinoM;
-
+    // float theta = 0;
+    GFC_Vector3D cam = { 0,-45,15 };
+    GFC_Vector3D lightPos = { -10, 0, 25 };
 
     Mesh* skybox;
     GFC_Matrix4 skyboxID;
     Texture* skyTexture;
 
-
+    World* testworld;
+    GFC_Matrix4 testworldID;
+    
     //initializtion    
     parse_arguments(argc,argv);
     init_logger("gf3d.log",0);
     slog("gf3d begin");
-
-
     //gfc init
     gfc_input_init("config/input.cfg");
     gfc_config_def_init();
     gfc_action_init(1024);
-
-
     //gf3d init
     gf3d_vgraphics_init("config/setup.cfg");
     gf2d_font_init("config/font.cfg");
     gf2d_actor_init(1000);
-    
+    entity_system_init(100);
     //game init
     srand(SDL_GetTicks());
     slog_sync();
-
-
     //bg = gf2d_sprite_load_image("images/bg_flat.png");
     gf2d_mouse_load("actors/mouse.actor");
-    mesh = gf3d_mesh_load("models/dino/dino.obj");
-    slog("Agumon loaded");
-    texture = gf3d_texture_load("models/dino/dino.png");
-    slog("Agumon texture loaded");
-    gfc_matrix4_identity(id);
     gf3d_camera_look_at(gfc_vector3d(0, 0, 0), &cam);
-
+    // Spawn player with vertical offset to avoid ground clipping
+    player_spawn(gfc_vector3d(0, 0, 1), GFC_COLOR_WHITE);
 
     skybox = gf3d_mesh_load("models/sky/sky.obj");
     skyTexture = gf3d_texture_load("models/sky/sky.png");
     gfc_matrix4_identity(skyboxID);
 
+    // Make Terrain and add file here
+    testworld = world_load("defs/terrain/terrain1.def");
+    gfc_matrix4_identity(testworldID);
     // main game loop    
     while(!_done)
     {
         gfc_input_update();
+        SDL_GetKeyboardState(NULL);
         gf2d_mouse_update();
         gf2d_font_update();
         //camera updaes
         gf3d_camera_update_view();
         gf3d_vgraphics_render_start();
                 //3d draws
-                gf3d_mesh_draw(mesh, id, GFC_COLOR_WHITE, texture);
+                entity_think_all();
+                entity_update_all();
                 gf3d_mesh_sky_draw(skybox, skyboxID, GFC_COLOR_WHITE, skyTexture);
+                world_draw(testworld);
+                // Enetities get drawn here
+                entity_draw_all(lightPos, GFC_COLOR_WHITE);
                 //2D draws
                 //gf2d_sprite_draw_image(bg,gfc_vector2d(0,0));
                 gf2d_font_draw_line_tag("ALT+F4 to exit",FT_H1,GFC_COLOR_WHITE, gfc_vector2d(10,10));
                 gf2d_mouse_draw();
         gf3d_vgraphics_render_end();
-        if (gfc_input_command_down("exit"))_done = 1; // exit here
+        if (gfc_input_command_down("exit"))_done = 1; // exit condition
         game_frame_delay();
     }    
     vkDeviceWaitIdle(gf3d_vgraphics_get_default_logical_device());    

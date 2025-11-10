@@ -18,7 +18,7 @@
 //forward declaration:
 typedef struct ObjData_S ObjData;
 
-//mesh information that goes to GPU 
+//absolute basics of the mesh information sent to the graphics card
 typedef struct
 {
     GFC_Matrix4     model;
@@ -30,14 +30,13 @@ typedef struct
     GFC_Vector4D    lightColor;
 }MeshUBO;
 
-// Declare our skybox 
 typedef struct
 {
-    GFC_Matrix4     model;
-    GFC_Matrix4     view;
-    GFC_Matrix4     proj;
+    GFC_Matrix4    model;
+    GFC_Matrix4      view;
+    GFC_Matrix4      proj;
     GFC_Vector4D    color;
-}SkyUBO;
+} SkyUBO;
 
 typedef struct
 {
@@ -98,10 +97,17 @@ Mesh *gf3d_mesh_new();
  */
 Mesh *gf3d_mesh_load(const char *filename);
 
+Mesh* gf3d_mesh_get_by_filename(const char* filename);
+
 /*
 * @brief draw the mesh with these parameters
 */
-void gf3d_mesh_draw(Mesh* mesh, GFC_Matrix4 modelMat, GFC_Color mod, Texture* texture);
+void gf3d_mesh_draw(Mesh* mesh, GFC_Matrix4 modelMat, GFC_Color mod, Texture* texture, GFC_Vector3D lightPos, GFC_Color lightColor);
+
+/*
+* @brief draw a skybox with provided parameters
+*/
+void gf3d_mesh_sky_draw(Mesh* sky, GFC_Matrix4 modelMat, GFC_Color mod, Texture* texture);
 
 //@brief draw all meshes loaded into the mesh manager
 void gf3d_mesh_draw_all();
@@ -155,16 +161,6 @@ void gf3d_mesh_primitive_create_vertex_buffer(MeshPrimitive* primitive);
  * @note the primitive must have the objData set and it must have be organizes in buffer order
  */
 void gf3d_mesh_primitive_create_face_buffer(MeshPrimitive* primitive);
-
-/**
- * @brief draws the skybox given params
- */
-void gf3d_mesh_sky_draw(Mesh* sky, GFC_Matrix4 modelMat, GFC_Color mod, Texture* texture);
-
-/**
- * @brief returns mesh data by filename
- */
-Mesh* gf3d_mesh_get_by_filename(const char* filename);
 
 /**
  * @brief get the pipeline that is used to render basic 3d meshes
