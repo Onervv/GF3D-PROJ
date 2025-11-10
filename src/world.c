@@ -46,7 +46,7 @@ World* world_load(const char* filename) {
 	world->texture = gf3d_texture_load(str);
 	sj_object_get_color_value(config, "color", &world->color);
 	sj_object_get_vector3d(config, "lightPosition", &world->lightPosition);
-
+	sj_free(json); // We need to free the json data after parsing
 	theWorld = world;
 	return world;
 }
@@ -54,9 +54,8 @@ World* world_load(const char* filename) {
 void world_free(World* w) {
 	gf3d_mesh_free(w->mesh);
 	gf3d_texture_free(w->texture);
-	//for loop clearing the entities in the list
 	gfc_list_clear(w->entities);
-	theWorld = NULL; //null the pointer to the static version as well
+	theWorld = NULL; 
 	memset(w, 0, sizeof(World));
 }
 
@@ -77,6 +76,9 @@ Uint8 world_edge_test(World* world, GFC_Vector3D start, GFC_Vector3D end, GFC_Ve
 	edge = gfc_edge3d_from_vectors(start, end);
 	pCount = gfc_list_count(world->mesh->primitives);
 
+	// check each primitive in the mesh
+	// check each face in the primitive
+	// if the edge intersects the face, return true
 	for (i = 0; i < pCount; i++) {
 		primitive = gfc_list_nth(world->mesh->primitives, i);
 		if ((!primitive) || (!primitive->objData)) continue;

@@ -25,6 +25,7 @@
 #include "entity.h"
 #include "player.h"
 #include "world.h"
+#include "camera_entity.h"
 
 extern int __DEBUG;
 
@@ -55,6 +56,7 @@ int main(int argc,char *argv[])
 
     World* testworld;
     GFC_Matrix4 testworldID;
+    CameraEntity* ce;
     
     //initializtion    
     parse_arguments(argc,argv);
@@ -76,7 +78,8 @@ int main(int argc,char *argv[])
     gf2d_mouse_load("actors/mouse.actor");
     gf3d_camera_look_at(gfc_vector3d(0, 0, 0), &cam);
     // Spawn player with vertical offset to avoid ground clipping
-    player_spawn(gfc_vector3d(0, 0, 1), GFC_COLOR_WHITE);
+    player_spawn(gfc_vector3d(0, 0, 20), GFC_COLOR_WHITE);
+    ce = camera_entity_new(); // Create camera entity to follow player
 
     skybox = gf3d_mesh_load("models/sky/sky.obj");
     skyTexture = gf3d_texture_load("models/sky/sky.png");
@@ -98,13 +101,14 @@ int main(int argc,char *argv[])
                 //3d draws
                 entity_think_all();
                 entity_update_all();
+                camera_think(ce);
                 gf3d_mesh_sky_draw(skybox, skyboxID, GFC_COLOR_WHITE, skyTexture);
                 world_draw(testworld);
                 // Enetities get drawn here
                 entity_draw_all(lightPos, GFC_COLOR_WHITE);
                 //2D draws
                 //gf2d_sprite_draw_image(bg,gfc_vector2d(0,0));
-                gf2d_font_draw_line_tag("ALT+F4 to exit",FT_H1,GFC_COLOR_WHITE, gfc_vector2d(10,10));
+                gf2d_font_draw_line_tag("ctrl q",FT_H1,GFC_COLOR_WHITE, gfc_vector2d(10,10));
                 gf2d_mouse_draw();
         gf3d_vgraphics_render_end();
         if (gfc_input_command_down("exit"))_done = 1; // exit condition

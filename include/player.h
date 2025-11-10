@@ -8,7 +8,12 @@ typedef struct {
 	Sint32			currentHealth;
 
 	Uint32			currentSpeed;
-	Uint32			maxSpeed
+	Uint32			maxSpeed;
+
+	Uint8 			carIndex; 		// Current car equipped
+	Uint8			carIndexMax; 	// Number of cars available
+
+	GFC_List*	    carInventory; 	// List of cars owned by the player
 }PlayerData;
 
 Entity* get_the_player();

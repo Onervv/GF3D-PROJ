@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "gfc_types.h": "c",
-        "simple_logger.h": "c"
+        "simple_logger.h": "c",
+        "camera_entity.h": "c",
+        "entity.h": "c"
     }
 }
