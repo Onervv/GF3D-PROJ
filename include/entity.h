@@ -18,9 +18,11 @@ typedef struct Entity_S {
 	GFC_Vector3D scale;
 	GFC_Box bounds;
 	GFC_Vector3D velocity;
+	Uint8 drawShadow;
 	void (*draw)(struct Entity_S* self);
 	void (*think)(struct Entity_S* self);
 	void (*update)(struct Entity_S* self);
+	void (*free)(struct Entity_S* self);
 	void* data;
 }Entity;
 
@@ -35,9 +37,9 @@ Entity* entity_new();
 void entity_free(Entity* e);
 
 /*@brief initializes the entity manager
-* @param max_ents the number of ents allocated in the manager
+* @param maxEnts the number of ents allocated in the manager
 */
-void entity_system_init(Uint16 max_ents);
+void entity_system_init(Uint16 maxEnts);
 
 void entity_system_close();
 
