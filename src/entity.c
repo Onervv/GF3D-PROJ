@@ -2,6 +2,7 @@
 
 #include "entity.h"
 #include "world.h"
+#include "player.h"
 
 typedef struct {
 	Entity* entity_list;
@@ -60,27 +61,54 @@ void entity_system_close() {
 }
 
 void entity_move(Entity* self) {
-	GFC_Box bounds;
-	GFC_Vector3D positionPre, positionPost, contact;
-	GFC_Vector2D direction2d;
+    if (!self) return;
+    PlayerData* pdata = (PlayerData*)self->data;
 
-	direction2d = gfc_vector2d_from_angle(self->rotation.z);
-	gfc_vector2d_normalize(&direction2d);
+    World* world = get_the_world();
+    if (!world) return;
 
-	gfc_vector3d_copy(positionPre, self->position);
-	gfc_vector3d_add(positionPost, self->position, self->velocity);
+    // --- Predict next position ---
+    GFC_Vector3D predicted;
+    gfc_vector3d_add(predicted, self->position, self->velocity);
 
-	if (world_edge_test(get_the_world(), positionPre, positionPost, &contact)) {
-		slog("CONTACT %f, %f, %f", contact.x, contact.y, contact.z);
-		
-	}
-	else {
-		gfc_vector3d_copy(self->position, positionPost);
-	}
-	
-	gfc_box_cpy(bounds, self->bounds); //start of collision checking
-	gfc_vector3d_add(bounds, bounds, self->velocity);
+    // --- Horizontal movement ---
+    self->position.x += self->velocity.x;
+    self->position.y += self->velocity.y;
+
+    // --- Ground detection ---
+    GFC_Vector3D start = self->position;
+    start.z += PLAYER_RADIUS;
+    GFC_Vector3D end = start;
+    end.z -= DOWN_RAY_BELOW;
+    GFC_Vector3D contact;
+
+    float groundZ = -9999.0f;
+    int hit = 0;
+    if (world_edge_test(world, start, end, &contact)) {
+        groundZ = contact.z + PLAYER_RADIUS;
+        hit = 1;
+    }
+
+    const float GROUND_BUFFER = 0.1f; // snap threshold
+
+    if (hit && self->velocity.z <= 0 && predicted.z <= groundZ + GROUND_BUFFER) {
+        // Snap to ground if falling and close
+        self->position.z = groundZ;
+        self->velocity.z = 0;
+        if (pdata) pdata->onGround = 1;
+    } else {
+        // In air, rising, or no ground below
+        self->position.z = predicted.z;
+        if (pdata) pdata->onGround = 0;
+    }
+
+    // --- Update bounds ---
+    self->bounds.x = self->position.x;
+    self->bounds.y = self->position.y;
+    self->bounds.z = self->position.z;
 }
+
+
 
 Uint8 entity_floor_check(Entity* self) {
 
