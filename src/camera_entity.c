@@ -33,7 +33,7 @@ void camera_think(CameraEntity* ce) {
     gfc_vector2d_normalize(&direction2d);
 
     // --- Base camera offset ---
-    GFC_Vector3D positionOffset = gfc_vector3d(-20, -20, 12);
+    GFC_Vector3D positionOffset = gfc_vector3d(-20, -30, 8);
     ce->target = ce->player->position; // Always look at player
 
     // --- Vertical adjustment (zoom in/out or tilt up/down) ---
