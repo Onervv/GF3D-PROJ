@@ -28,8 +28,8 @@ void physics_apply(Entity *self, Uint8 onGround, Uint8 ignoreGravity) {
         }
     }
 
-    slog("Physics apply: onGround=%d, vel.x=%f, vel.y=%f, vel.z=%f, ignoreGravity=%d", 
-    onGround, self->velocity.x, self->velocity.y, self->velocity.z, ignoreGravity);
+    // slog("Physics apply: onGround=%d, vel.x=%f, vel.y=%f, vel.z=%f, ignoreGravity=%d", 
+    // onGround, self->velocity.x, self->velocity.y, self->velocity.z, ignoreGravity);
 
     // --- Prevent tiny floating point values ---
     if (fabs(self->velocity.x) < 0.0001f) self->velocity.x = 0;

@@ -38,7 +38,6 @@ void player_data_new(PlayerData* data) {
     data->carIndexMax = 0;
 }
 
-// --- Spawn player ---
 Entity* player_spawn(GFC_Vector3D position, GFC_Color color) {
     Entity* self;
     PlayerData* data;
@@ -48,7 +47,9 @@ Entity* player_spawn(GFC_Vector3D position, GFC_Color color) {
 
     data = gfc_allocate_array(sizeof(PlayerData), 1);
     player_data_new(data);
+
     data->onGround = 0; // start in air
+    data->spawnPoint = position; // THIS CAUSES SEG FAULT LAST TIME WATCH IT
     self->data = data;
 
     gfc_line_cpy(self->name, "Player");
@@ -56,8 +57,8 @@ Entity* player_spawn(GFC_Vector3D position, GFC_Color color) {
     self->texture = gf3d_texture_load("models/primitives/flatwhite.png");
     self->color = color;
     self->position = position;
-    self->rotation = gfc_vector3d(0,0,-2*GFC_PI);
-    self->scale = gfc_vector3d(1,1,1);
+    self->rotation = gfc_vector3d(0, 0, -2 * GFC_PI);
+    self->scale = gfc_vector3d(1, 1, 1);
 
     self->think = player_think;
     self->update = player_update;
@@ -110,5 +111,17 @@ void player_think(Entity* self) {
 
 void player_update(Entity* self) {
     if (!self) return;
-    // Currently, all movement handled in think() and entity_move(), not ideal but works for now
+    PlayerData* pdata = (PlayerData*)self->data;
+    if (!pdata) return;
+	// slog("Player position: x=%.2f, y=%.2f, z=%.2f", self->position.x, self->position.y, self->position.z);
+    // --- Respawn if fallen too far ---
+    if (self->position.z < -100.0f) { // threshold
+		slog("here");
+        self->position = pdata->spawnPoint;
+        self->velocity = gfc_vector3d(0, 0, 0); // reset momentum
+        pdata->onGround = 0; // reset grounded state
+    }
+
+    // --- Normal update / think ---
+    if (self->think) self->think(self);
 }
