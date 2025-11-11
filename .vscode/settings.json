@@ -3,6 +3,8 @@
         "gfc_types.h": "c",
         "simple_logger.h": "c",
         "camera_entity.h": "c",
-        "entity.h": "c"
+        "entity.h": "c",
+        "world.h": "c",
+        "player.h": "c"
     }
 }

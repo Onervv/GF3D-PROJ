@@ -9,11 +9,13 @@ typedef struct {
 
 	Uint32			currentSpeed;
 	Uint32			maxSpeed;
+	Uint8			onGround; // 1 if player on ground 0 if in air.
 
 	Uint8 			carIndex; 		// Current car equipped
 	Uint8			carIndexMax; 	// Number of cars available
 
 	GFC_List*	    carInventory; 	// List of cars owned by the player
+
 }PlayerData;
 
 Entity* get_the_player();

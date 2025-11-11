@@ -6,6 +6,15 @@
 
 #include "gf3d_mesh.h"
 
+#define PLAYER_RADIUS        	1.0f    // radius of your sphere player
+#define DOWN_RAY_ABOVE       	1.0f    // start ray slightly above the sphere's bottom
+#define DOWN_RAY_BELOW       	2.5f    // HOLY SHIT MAGIC RAY CAST FLOATING POINT SAVIOR, keep this on 2.5
+#define PENETRATION_TOLERANCE 	0.05f   // buffer to prevent jitter when snapping to ground
+#define REST_TOLERANCE       	0.02f   // how close to ground before stopping Z velocity
+#define GRAVITY                -0.02f   // downward acceleration per frame
+#define JUMP_STRENGTH        	0.5f    // initial velocity when jumping
+#define MOVE_SPEED           	0.05f   // forward/backward movement speed
+
 typedef struct Entity_S {
 	Uint8 _inuse;
 	GFC_TextLine name;
