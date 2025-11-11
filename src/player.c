@@ -10,8 +10,7 @@
 #define PENETRATION_TOLERANCE 	0.05f
 #define REST_TOLERANCE       	0.02f
 
-#define GRAVITY                -0.02f
-#define JUMP_STRENGTH        	3.0f
+#define JUMP_STRENGTH        	2.0f
 #define MOVE_SPEED           	0.5f
 
 static Entity* thePlayer;

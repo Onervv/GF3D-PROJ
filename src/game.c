@@ -82,7 +82,7 @@ int main(int argc,char *argv[])
     ce = camera_entity_new(); // Create camera entity to follow player
 
     skybox = gf3d_mesh_load("models/sky/sky.obj");
-    skyTexture = gf3d_texture_load("models/sky/sky.png");
+    skyTexture = gf3d_texture_load("models/sky/k0rILCL.png");
     gfc_matrix4_identity(skyboxID);
 
     // Make Terrain and add file here

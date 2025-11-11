@@ -5,7 +5,7 @@
 #include <math.h>
 
 // Tunable constants
-#define PHYS_GRAVITY            -0.2f
+#define PHYS_GRAVITY            -0.1f
 #define PHYS_TERMINAL_VELOCITY  -10.0f
 #define PHYS_GROUND_FRICTION     0.96f
 #define PHYS_AIR_FRICTION        0.985f
