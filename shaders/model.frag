@@ -1,18 +1,15 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
-layout(binding = 1) uniform sampler2D texSampler;
-
-layout(location = 0) in vec2 fragTexCoord;
-layout(location = 1) in vec3 outNormal;
-layout(location = 2) in vec4 colorMod;
-layout(location = 3) in vec4 worldPosition;
-layout(location = 4) in vec4 cameraPos;
-
 layout(location = 0) out vec4 outColor;
+layout(location = 3) in vec4 worldPosition; // we can use this
 
-void main()
-{
-    vec4 texColor = texture(texSampler, fragTexCoord);
-    outColor = texColor;
+void main() {
+    // Create a smooth gradient along X without blinking
+    float gradient = 0.5 + 0.5 * sin(worldPosition.x * 5.0);
+    
+    // Apply green color with the gradient
+    vec3 color = vec3(0.0, 1.0, 0.0) * gradient;
+    
+    outColor = vec4(color, 1.0);
 }
