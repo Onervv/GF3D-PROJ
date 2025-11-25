@@ -4,14 +4,14 @@
 #include "world.h"
 
 // Constants
-#define PLAYER_RADIUS        	1.0f
+#define PLAYER_RADIUS        	2.0f
 #define DOWN_RAY_ABOVE       	1.0f
 #define DOWN_RAY_BELOW       	2.0f
 #define PENETRATION_TOLERANCE 	0.05f
 #define REST_TOLERANCE       	0.02f
 
-#define JUMP_STRENGTH        	2.0f
-#define MOVE_SPEED           	0.5f
+#define JUMP_STRENGTH        	0.5f
+#define MOVE_SPEED           	0.0001f
 
 static Entity* thePlayer;
 
