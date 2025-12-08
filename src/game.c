@@ -26,6 +26,7 @@
 #include "player.h"
 #include "world.h"
 #include "camera_entity.h"
+#include "gfc_audio.h"
 
 extern int __DEBUG;
 
@@ -57,6 +58,7 @@ int main(int argc,char *argv[])
     World* testworld;
     GFC_Matrix4 testworldID;
     CameraEntity* ce;
+    Mix_Music *background_music = NULL;
     
     //initializtion    
     parse_arguments(argc,argv);
@@ -71,6 +73,8 @@ int main(int argc,char *argv[])
     gf2d_font_init("config/font.cfg");
     gf2d_actor_init(1000);
     entity_system_init(100);
+    //audio init
+    gfc_audio_init(256,1,1);
     //game init
     srand(SDL_GetTicks());
     slog_sync();
@@ -88,6 +92,13 @@ int main(int argc,char *argv[])
     // Make Terrain and add file here
     testworld = world_load("defs/terrain/terrain1.def");
     gfc_matrix4_identity(testworldID);
+
+    // basic background music implementation
+    background_music = gfc_sound_load_music("music/arcade-beat-323176.mp3");
+if (background_music) {
+    Mix_PlayMusic(background_music, -1);  // -1 = loop forever
+    Mix_VolumeMusic(64);  // Volume 0-128
+}
     // main game loop    
     while(!_done)
     {
@@ -115,6 +126,11 @@ int main(int argc,char *argv[])
         game_frame_delay();
     }    
     vkDeviceWaitIdle(gf3d_vgraphics_get_default_logical_device());    
+
+    // Cleanup
+    if (background_music) {
+    Mix_FreeMusic(background_music);
+}
     //cleanup
     slog("gf3d program end");
     exit(0);
