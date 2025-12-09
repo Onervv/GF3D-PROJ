@@ -72,8 +72,9 @@ void entity_move(Entity* self) {
     gfc_vector3d_add(predicted, self->position, self->velocity);
 
     // --- Horizontal movement ---
-    self->position.x += self->velocity.x;
-    self->position.y += self->velocity.y;
+	self->position.x += self->velocity.x/1.35;
+	self->position.y += self->velocity.y/1.35;
+	
 
     // --- Ground detection ---
     GFC_Vector3D start = self->position;
@@ -106,6 +107,8 @@ void entity_move(Entity* self) {
     self->bounds.x = self->position.x;
     self->bounds.y = self->position.y;
     self->bounds.z = self->position.z;
+
+	
 }
 
 

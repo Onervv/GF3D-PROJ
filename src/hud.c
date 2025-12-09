@@ -20,7 +20,7 @@ HUD* hud_init() {
     }
 
     // Position & scale
-    hud->meterPos = gfc_vector2d(50, 560);
+    hud->meterPos = gfc_vector2d(50, 530);
     hud->meterScale = gfc_vector2d(0.125f, 0.125f);
 
     hud->currentFrame = 0;
@@ -70,7 +70,7 @@ void hud_draw(HUD *hud) {
         NULL, // color
         NULL, // frame
         NULL, // extra
-        99    // layer (high so it appears on top)
+        99    //  Higher layer appears on top
     );
 }
 

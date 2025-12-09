@@ -20,10 +20,12 @@ void physics_apply(Entity *self, Uint8 onGround, Uint8 ignoreGravity) {
         self->velocity.x *= PHYS_AIR_FRICTION;
         self->velocity.y *= PHYS_AIR_FRICTION;
 
-        float horizontalSpeed = sqrtf(self->velocity.x * self->velocity.x + self->velocity.y * self->velocity.y);
-        if (horizontalSpeed > PHYS_MAX_AIR_SPEED) {
-            float scale = PHYS_MAX_AIR_SPEED / horizontalSpeed;
+        if (self->velocity.x > PHYS_MAX_AIR_SPEED) {
+            float scale = (PHYS_MAX_AIR_SPEED / self->velocity.x);
             self->velocity.x *= scale;
+        }
+        if (self->velocity.y > PHYS_MAX_AIR_SPEED) {
+            float scale = (PHYS_MAX_AIR_SPEED / self->velocity.y);
             self->velocity.y *= scale;
         }
     }
