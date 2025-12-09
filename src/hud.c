@@ -7,7 +7,6 @@ HUD* hud_init() {
     HUD *hud = gfc_allocate_array(sizeof(HUD), 1);
     if (!hud) return NULL;
 
-    // Load speed_1.png → speed_15.png
     for (int i = 0; i < SPEED_FRAMES; i++) {
         char path[256];
         snprintf(path, sizeof(path),
