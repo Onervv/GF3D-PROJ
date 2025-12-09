@@ -27,6 +27,8 @@
 #include "world.h"
 #include "camera_entity.h"
 #include "gfc_audio.h"
+#include "gf2d_ui.h"
+#include "hud.h"
 
 extern int __DEBUG;
 
@@ -46,7 +48,7 @@ void exitGame()
 int main(int argc,char *argv[])
 {
     //local variables
-    //Sprite *bg;
+    // Sprite *speedometer, *arrow;
     // float theta = 0;
     GFC_Vector3D cam = { 0,-45,15 };
     GFC_Vector3D lightPos = { -10, 0, 25 };
@@ -59,6 +61,8 @@ int main(int argc,char *argv[])
     GFC_Matrix4 testworldID;
     CameraEntity* ce;
     Mix_Music *background_music = NULL;
+    HUD *hud = NULL;
+    Entity *playerEntity = NULL;
     
     //initializtion    
     parse_arguments(argc,argv);
@@ -75,14 +79,17 @@ int main(int argc,char *argv[])
     entity_system_init(100);
     //audio init
     gfc_audio_init(256,1,1);
+    //hud init
+    hud = hud_init();
     //game init
     srand(SDL_GetTicks());
     slog_sync();
-    //bg = gf2d_sprite_load_image("images/bg_flat.png");
+    // Declare sprites here, trying to refactor this
+    // speedometer = gf2d_sprite_load_image("images/ui/speedometer/SpeedWheel.png");
     gf2d_mouse_load("actors/mouse.actor");
     gf3d_camera_look_at(gfc_vector3d(0, 0, 0), &cam);
     // Spawn player with vertical offset to avoid ground clipping
-    player_spawn(gfc_vector3d(0, 0, 20), GFC_COLOR_WHITE);
+    playerEntity = player_spawn(gfc_vector3d(0, 0, 20), GFC_COLOR_WHITE);
     ce = camera_entity_new(); // Create camera entity to follow player
 
     skybox = gf3d_mesh_load("models/sky/sky.obj");
@@ -106,6 +113,7 @@ if (background_music) {
         SDL_GetKeyboardState(NULL);
         gf2d_mouse_update();
         gf2d_font_update();
+        hud_update(hud, playerEntity);
         //camera updaes
         gf3d_camera_update_view();
         gf3d_vgraphics_render_start();
@@ -118,7 +126,8 @@ if (background_music) {
                 // Enetities get drawn here
                 entity_draw_all(lightPos, GFC_COLOR_WHITE);
                 //2D draws
-                //gf2d_sprite_draw_image(bg,gfc_vector2d(0,0));
+                hud_draw(hud);
+                // gf2d_sprite_draw_image(speedometer,gfc_vector2d(0,0));
                 gf2d_font_draw_line_tag("ctrl q",FT_H1,GFC_COLOR_WHITE, gfc_vector2d(10,10));
                 gf2d_mouse_draw();
         gf3d_vgraphics_render_end();
@@ -128,6 +137,7 @@ if (background_music) {
     vkDeviceWaitIdle(gf3d_vgraphics_get_default_logical_device());    
 
     // Cleanup
+    hud_free(hud);
     if (background_music) {
     Mix_FreeMusic(background_music);
 }
