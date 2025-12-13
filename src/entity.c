@@ -3,6 +3,7 @@
 #include "entity.h"
 #include "world.h"
 #include "player.h"
+#include "world.h"
 
 typedef struct {
 	Entity* entity_list;
@@ -86,9 +87,10 @@ void entity_move(Entity* self) {
     float groundZ = -9999.0f;
     int hit = 0;
     if (world_edge_test(world, start, end, &contact)) {
-        groundZ = contact.z + PLAYER_RADIUS;
-        hit = 1;
-    }
+    groundZ = contact.z + PLAYER_RADIUS;
+    hit = 1;
+    if (pdata) gfc_vector3d_copy(pdata->groundContact, contact);  // catch the results for use
+	}
 
     const float GROUND_BUFFER = 0.1f; // snap threshold
 
@@ -112,11 +114,6 @@ void entity_move(Entity* self) {
 }
 
 
-
-Uint8 entity_floor_check(Entity* self) {
-
-}
-
 void entity_draw(Entity* ent, GFC_Vector3D lightPos, GFC_Color colorMod) {
 	GFC_Matrix4 modelMat;
 	if (!ent) return;
@@ -129,46 +126,73 @@ void entity_draw(Entity* ent, GFC_Vector3D lightPos, GFC_Color colorMod) {
 		colorMod);
 }
 
-void entity_draw_shadow(Entity* ent) {
-	GFC_Vector3D drawPosition;
-	GFC_Matrix4 modelMat;
-	if (!ent || !ent->drawShadow) return 0;
-	gfc_vector3d_copy(drawPosition, ent->position);
-	gfc_matrix4_from_vectors(modelMat, ent->position, ent->rotation, gfc_vector3d(ent->scale.x, ent->scale.y, .1));
-}
+// void entity_draw_shadow(Entity* ent) {
+//     GFC_Vector3D drawPosition;
+//     GFC_Matrix4 modelMat;
+//     PlayerData* pdata;
+//     GFC_Vector3D lightPos = {0, 0, 0};  // Shadow doesn't need lighting
+    
+//     if (!ent || !ent->drawShadow) return;
+//     if (!ent->mesh) return;
+    
+//     pdata = (PlayerData*)ent->data;
+//     if (pdata && pdata->onGround) {
+//         // Use already-calculated ground contact
+//         gfc_vector3d_copy(drawPosition, pdata->groundContact);
+//     } else {
+//         // Fallback for non-grounded or non-player entities
+//         gfc_vector3d_copy(drawPosition, ent->position);
+//         drawPosition.z = 0;
+//     }
+    
+//     gfc_matrix4_from_vectors(modelMat, drawPosition, ent->rotation, 
+//                              gfc_vector3d(ent->scale.x, ent->scale.y, .1));
+    
+//     // Draw the shadow
+//     gf3d_mesh_draw(
+//         ent->mesh,
+//         modelMat,
+//         gfc_color(0, 0, 0, 0.5),  // Semi-transparent black shadow
+//         ent->texture,
+//         lightPos,
+//         GFC_COLOR_BLACK
+//     );
+// }
+
 
 void entity_draw_all(GFC_Vector3D lightPos, GFC_Color colorMod) {
 	int i;
 	for (i = 0; i < entity_system.entity_max; i++) {
 		if (!entity_system.entity_list[i]._inuse) continue;
 		entity_draw(&entity_system.entity_list[i], lightPos, colorMod);
+		// entity_draw_shadow(&entity_system.entity_list[i]);
 	}
 }
 
-void entity_think(Entity* self)
+void entity_think(Entity* self, float deltaTime)
 {
 	if (!self)return;
-	if (self->think)self->think(self);
+	if (self->think)self->think(self, deltaTime);
 }
 
-void entity_think_all() {
+void entity_think_all(float deltaTime) {
 	int i;
 	for (i = 0; i < entity_system.entity_max; i++) {
 		if (!entity_system.entity_list[i]._inuse)continue;
-		entity_think(&entity_system.entity_list[i]);
+		entity_think(&entity_system.entity_list[i], deltaTime);
 	}
 }
 
-void entity_update(Entity* self)
+void entity_update(Entity* self, float deltaTime)
 {
 	if (!self)return;
-	if (self->update)self->update(self);
+	if (self->update)self->update(self, deltaTime);
 }
 
-void entity_update_all() {
+void entity_update_all(float deltaTime) {
 	int i;
 	for (i = 0; i < entity_system.entity_max; i++) {
 		if (!entity_system.entity_list[i]._inuse)continue;
-		entity_update(&entity_system.entity_list[i]);
+		entity_update(&entity_system.entity_list[i], deltaTime);
 	}
 }

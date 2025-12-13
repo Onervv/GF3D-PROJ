@@ -12,8 +12,8 @@
 #define PENETRATION_TOLERANCE 	0.05f   // buffer to prevent jitter when snapping to ground
 #define REST_TOLERANCE       	0.02f   // how close to ground before stopping Z velocity
 #define GRAVITY                -0.02f   // downward acceleration per frame
-#define JUMP_STRENGTH        	0.5f    // initial velocity when jumping
-#define MOVE_SPEED           	0.05f   // forward/backward movement speed
+// #define JUMP_STRENGTH        	0.5f    // initial velocity when jumping
+// #define MOVE_SPEED           	0.05f   // forward/backward movement speed
 
 typedef struct Entity_S {
 	Uint8 _inuse;
@@ -29,8 +29,8 @@ typedef struct Entity_S {
 	GFC_Vector3D velocity;
 	Uint8 drawShadow;
 	void (*draw)(struct Entity_S* self);
-	void (*think)(struct Entity_S* self);
-	void (*update)(struct Entity_S* self);
+	void (*think)(struct Entity_S* self, float deltaTime);   
+    void (*update)(struct Entity_S* self, float deltaTime);  
 	void (*free)(struct Entity_S* self);
 	void* data;
 }Entity;
@@ -56,13 +56,13 @@ void entity_move(Entity* self);
 
 void entity_draw_all(GFC_Vector3D lightPos, GFC_Color colorMod);
 
-void entity_think(Entity* self);
+void entity_think(Entity* self, float deltaTime);
 
-void entity_think_all();
+void entity_think_all(float deltaTime);
 
-void entity_update(Entity* self);
+void entity_update(Entity* self, float deltaTime);
 
-void entity_update_all();
+void entity_update_all(float deltaTime);
 
 
 

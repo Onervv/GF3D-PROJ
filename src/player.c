@@ -4,14 +4,18 @@
 #include "world.h"
 
 // Constants
-#define PLAYER_RADIUS        	1.0f
-#define DOWN_RAY_ABOVE       	1.0f
-#define DOWN_RAY_BELOW       	2.0f
+// #define PLAYER_RADIUS     	    1.0f;
+// #define DOWN_RAY_ABOVE       	1.0f
+// #define DOWN_RAY_BELOW       	2.0f
 #define PENETRATION_TOLERANCE 	0.05f
 #define REST_TOLERANCE       	0.02f
 
 #define JUMP_STRENGTH        	1.1f
 #define MOVE_SPEED           	0.5f
+
+#define SPEED_BOOST_DURATION    2.0f   // Boost lasts 2 seconds
+#define SPEED_BOOST_COOLDOWN    5.0f   // 5 second cooldown
+#define SPEED_BOOST_MULTIPLIER  2.0f   // 2x speed
 
 static Entity* thePlayer;
 
@@ -35,6 +39,12 @@ void player_data_new(PlayerData* data) {
     data->carInventory = gfc_list_new();
     data->carIndex = 0;
     data->carIndexMax = 0;
+
+     // Speed boost initialization
+    data->speedBoostActive = 0;
+    data->speedBoostTimer = 0.0f;
+    data->speedBoostCooldown = 0.0f;
+    data->speedBoostMultiplier = 2.0f;  // 2x for now
 }
 
 Entity* player_spawn(GFC_Vector3D position, GFC_Color color) {
@@ -59,6 +69,8 @@ Entity* player_spawn(GFC_Vector3D position, GFC_Color color) {
     self->rotation = gfc_vector3d(0, 0, -2 * GFC_PI);
     self->scale = gfc_vector3d(1, 1, 1);
 
+    self->drawShadow = 1;  //Enable shadows
+
     self->think = player_think;
     self->update = player_update;
 
@@ -67,7 +79,7 @@ Entity* player_spawn(GFC_Vector3D position, GFC_Color color) {
 }
 
 // --- Player movement logic ---
-void player_think(Entity* self) {
+void player_think(Entity* self, float deltaTime) {
     if (!self) return;
     PlayerData* pdata = (PlayerData*)self->data;
     if (!pdata) return;
@@ -108,12 +120,12 @@ void player_think(Entity* self) {
 }
 
 
-void player_update(Entity* self) {
+void player_update(Entity* self, float deltaTime) {
     if (!self) return;
     PlayerData* pdata = (PlayerData*)self->data;
     if (!pdata) return;
 	// slog("Player position: x=%.2f, y=%.2f, z=%.2f", self->position.x, self->position.y, self->position.z);
-    // --- Respawn if fallen too far ---
+    // Contained game world magic here (ligit just set player location back to origin)
     if (self->position.z < -100.0f) { // threshold
 		slog("here");
         self->position = pdata->spawnPoint;
@@ -122,5 +134,5 @@ void player_update(Entity* self) {
     }
 
     // --- Normal update / think ---
-    if (self->think) self->think(self);
+    if (self->think) self->think(self, deltaTime);
 }

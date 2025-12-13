@@ -35,9 +35,10 @@ extern int __DEBUG;
 static int _done = 0;
 static Uint32 frame_delay = 33;
 static float fps = 0;
+static float deltaTime = 0.0f;
 
 void parse_arguments(int argc,char *argv[]);
-void game_frame_delay();
+float game_frame_delay();
 
 void exitGame()
 {
@@ -118,8 +119,8 @@ if (background_music) {
         gf3d_camera_update_view();
         gf3d_vgraphics_render_start();
                 //3d draws
-                entity_think_all();
-                entity_update_all();
+                entity_think_all(deltaTime);
+                entity_update_all(deltaTime);
                 camera_think(ce);
                 gf3d_mesh_sky_draw(skybox, skyboxID, GFC_COLOR_WHITE, skyTexture);
                 world_draw(testworld);
@@ -132,7 +133,7 @@ if (background_music) {
                 gf2d_mouse_draw();
         gf3d_vgraphics_render_end();
         if (gfc_input_command_down("exit"))_done = 1; // exit condition
-        game_frame_delay();
+        deltaTime = game_frame_delay();
     }    
     vkDeviceWaitIdle(gf3d_vgraphics_get_default_logical_device());    
 
@@ -161,20 +162,26 @@ void parse_arguments(int argc,char *argv[])
     }    
 }
 
-void game_frame_delay()
+float game_frame_delay()
 {
     Uint32 diff;
     static Uint32 now;
     static Uint32 then;
+    float delta;
+    
     then = now;
-    slog_sync();// make sure logs get written when we have time to write it
+    slog_sync();
     now = SDL_GetTicks();
     diff = (now - then);
+    
+    delta = diff / 1000.0f;  // Convert milliseconds to seconds
+    
     if (diff < frame_delay)
     {
         SDL_Delay(frame_delay - diff);
     }
-    fps = 1000.0/MAX(SDL_GetTicks() - then,0.001);
-//     slog("fps: %f",fps);
+    fps = 1000.0/MAX(SDL_GetTicks() - then, 0.001);
+    
+    return delta;  // Return delta time in seconds
 }
 /*eol@eof*/

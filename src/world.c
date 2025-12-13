@@ -71,7 +71,7 @@ Uint8 world_edge_test(World* world, GFC_Vector3D start, GFC_Vector3D end, GFC_Ve
 	GFC_Triangle3D tri;
 	MeshPrimitive* primitive;
 
-	if (!world) return NULL;
+	if (!world) return 0;
 
 	edge = gfc_edge3d_from_vectors(start, end);
 	pCount = gfc_list_count(world->mesh->primitives);
