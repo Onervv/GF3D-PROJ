@@ -64,36 +64,66 @@ void entity_system_close() {
 void entity_move(Entity* self) {
     if (!self) return;
     PlayerData* pdata = (PlayerData*)self->data;
-
     World* world = get_the_world();
     if (!world) return;
-
+    
     // --- Predict next position ---
     GFC_Vector3D predicted;
     gfc_vector3d_add(predicted, self->position, self->velocity);
-
+    
+    // only check wall if moving horizontally 
+    float horizontalSpeed = sqrt(self->velocity.x * self->velocity.x + 
+                                  self->velocity.y * self->velocity.y);
+    
+    if (horizontalSpeed > 0.01f) {  // Only check walls if actually moving
+        GFC_Vector3D wallContact;
+        int blockedLow = 0, blockedHigh = 0;
+        
+        // Check at feet level (horizontal ray)
+        GFC_Vector3D rayStart = self->position;
+        GFC_Vector3D rayEnd = predicted;
+        rayEnd.z = self->position.z;  // Keep Z same for horizontal check
+        if (world_edge_test(world, rayStart, rayEnd, &wallContact)) {
+            blockedLow = 1;
+        }
+        
+        // Only do high check if low was blocked (saves a raycast!)
+        if (blockedLow) {
+            // Start the ray higher up to reduce what's considered a wall
+            rayStart.z += PLAYER_RADIUS * 2.0f;  // Increased to 2.0 for stricter slopes
+            rayEnd.z = predicted.z + PLAYER_RADIUS * 2.0f;
+            if (world_edge_test(world, rayStart, rayEnd, &wallContact)) {
+                blockedHigh = 1;
+            }
+            
+            // If BOTH levels blocked = wall, stop movement
+            if (blockedHigh) {
+                self->velocity.x = 0;
+                self->velocity.y = 0;
+            }
+        }
+    }
+    
     // --- Horizontal movement ---
-	self->position.x += self->velocity.x/1.35;
-	self->position.y += self->velocity.y/1.35;
-	
-
+    self->position.x += self->velocity.x / 1.35;
+    self->position.y += self->velocity.y / 1.35;
+    
     // --- Ground detection ---
     GFC_Vector3D start = self->position;
     start.z += PLAYER_RADIUS;
     GFC_Vector3D end = start;
     end.z -= DOWN_RAY_BELOW;
     GFC_Vector3D contact;
-
     float groundZ = -9999.0f;
     int hit = 0;
+    
     if (world_edge_test(world, start, end, &contact)) {
-    groundZ = contact.z + PLAYER_RADIUS;
-    hit = 1;
-    if (pdata) gfc_vector3d_copy(pdata->groundContact, contact);  // catch the results for use
-	}
-
-    const float GROUND_BUFFER = 0.1f; // snap threshold
-
+        groundZ = contact.z + PLAYER_RADIUS;
+        hit = 1;
+        if (pdata) gfc_vector3d_copy(pdata->groundContact, contact);
+    }
+    
+    const float GROUND_BUFFER = 0.1f;
     if (hit && self->velocity.z <= 0 && predicted.z <= groundZ + GROUND_BUFFER) {
         // Snap to ground if falling and close
         self->position.z = groundZ;
@@ -104,13 +134,11 @@ void entity_move(Entity* self) {
         self->position.z = predicted.z;
         if (pdata) pdata->onGround = 0;
     }
-
+    
     // --- Update bounds ---
     self->bounds.x = self->position.x;
     self->bounds.y = self->position.y;
     self->bounds.z = self->position.z;
-
-	
 }
 
 
@@ -125,39 +153,6 @@ void entity_draw(Entity* ent, GFC_Vector3D lightPos, GFC_Color colorMod) {
 		lightPos,
 		colorMod);
 }
-
-// void entity_draw_shadow(Entity* ent) {
-//     GFC_Vector3D drawPosition;
-//     GFC_Matrix4 modelMat;
-//     PlayerData* pdata;
-//     GFC_Vector3D lightPos = {0, 0, 0};  // Shadow doesn't need lighting
-    
-//     if (!ent || !ent->drawShadow) return;
-//     if (!ent->mesh) return;
-    
-//     pdata = (PlayerData*)ent->data;
-//     if (pdata && pdata->onGround) {
-//         // Use already-calculated ground contact
-//         gfc_vector3d_copy(drawPosition, pdata->groundContact);
-//     } else {
-//         // Fallback for non-grounded or non-player entities
-//         gfc_vector3d_copy(drawPosition, ent->position);
-//         drawPosition.z = 0;
-//     }
-    
-//     gfc_matrix4_from_vectors(modelMat, drawPosition, ent->rotation, 
-//                              gfc_vector3d(ent->scale.x, ent->scale.y, .1));
-    
-//     // Draw the shadow
-//     gf3d_mesh_draw(
-//         ent->mesh,
-//         modelMat,
-//         gfc_color(0, 0, 0, 0.5),  // Semi-transparent black shadow
-//         ent->texture,
-//         lightPos,
-//         GFC_COLOR_BLACK
-//     );
-// }
 
 
 void entity_draw_all(GFC_Vector3D lightPos, GFC_Color colorMod) {
