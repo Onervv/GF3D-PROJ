@@ -22,22 +22,24 @@
 #include "gf3d_camera.h"
 #include "gf3d_mesh.h"
 
+#include "menu.h"
 #include "entity.h"
 #include "player.h"
 #include "world.h"
 #include "camera_entity.h"
 #include "gfc_audio.h"
-#include "gf2d_ui.h"
 #include "hud.h"
+
 
 extern int __DEBUG;
 
 static int _done = 0;
 static Uint32 frame_delay = 33;
 static float fps = 0;
+static float deltaTime = 0.0f;
 
 void parse_arguments(int argc,char *argv[]);
-void game_frame_delay();
+float game_frame_delay();
 
 void exitGame()
 {
@@ -63,6 +65,7 @@ int main(int argc,char *argv[])
     Mix_Music *background_music = NULL;
     HUD *hud = NULL;
     Entity *playerEntity = NULL;
+    Menu* menu = NULL;
     
     //initializtion    
     parse_arguments(argc,argv);
@@ -88,6 +91,8 @@ int main(int argc,char *argv[])
     // speedometer = gf2d_sprite_load_image("images/ui/speedometer/SpeedWheel.png");
     gf2d_mouse_load("actors/mouse.actor");
     gf3d_camera_look_at(gfc_vector3d(0, 0, 0), &cam);
+    // idk
+    menu = menu_init();
     // Spawn player with vertical offset to avoid ground clipping
     playerEntity = player_spawn(gfc_vector3d(0, 0, 20), GFC_COLOR_WHITE);
     ce = camera_entity_new(); // Create camera entity to follow player
@@ -107,37 +112,68 @@ if (background_music) {
     Mix_VolumeMusic(64);  // Volume 0-128
 }
     // main game loop    
-    while(!_done)
+   while(!_done)
     {
         gfc_input_update();
         SDL_GetKeyboardState(NULL);
         gf2d_mouse_update();
         gf2d_font_update();
-        hud_update(hud, playerEntity);
-        //camera updaes
+        
+        // Update menu
+        if (menu) {
+            menu_update(menu, deltaTime);
+            
+            // Check if game should start
+            if (menu_get_state(menu) == MENU_STATE_GAME && !playerEntity) {
+                slog("Starting game...");
+                // Spawn player when game starts
+                playerEntity = player_spawn(gfc_vector3d(0, 0, 20), GFC_COLOR_WHITE);
+                ce = camera_entity_new();
+            }
+        }
+        
+        // Only update game if player exists (game has started)
+        if (playerEntity) {
+            hud_update(hud, playerEntity);
+        }
+        
         gf3d_camera_update_view();
         gf3d_vgraphics_render_start();
-                //3d draws
-                entity_think_all();
-                entity_update_all();
-                camera_think(ce);
-                gf3d_mesh_sky_draw(skybox, skyboxID, GFC_COLOR_WHITE, skyTexture);
-                world_draw(testworld);
-                // Enetities get drawn here
-                entity_draw_all(lightPos, GFC_COLOR_WHITE);
-                //2D draws
+        
+        // Draw menu OR game
+        if (menu && menu_get_state(menu) == MENU_STATE_MAIN) {
+            // MAIN MENU - only draw menu
+            menu_draw(menu);
+            
+        } else {
+            // IN GAME - draw game world
+            entity_think_all(deltaTime);
+            entity_update_all(deltaTime);
+            if (ce) camera_think(ce);
+            
+            gf3d_mesh_sky_draw(skybox, skyboxID, GFC_COLOR_WHITE, skyTexture);
+            world_draw(testworld);
+            entity_draw_all(lightPos, GFC_COLOR_WHITE);
+            
+            if (playerEntity) {
                 hud_draw(hud);
-                // gf2d_sprite_draw_image(speedometer,gfc_vector2d(0,0));
-                gf2d_font_draw_line_tag("ctrl q",FT_H1,GFC_COLOR_WHITE, gfc_vector2d(10,10));
-                gf2d_mouse_draw();
+            }
+        }
+        
+        // Always draw mouse and UI text on top
+        gf2d_font_draw_line_tag("ctrl q", FT_H1, GFC_COLOR_WHITE, gfc_vector2d(10, 10));
+        gf2d_mouse_draw();
+        
         gf3d_vgraphics_render_end();
-        if (gfc_input_command_down("exit"))_done = 1; // exit condition
-        game_frame_delay();
+        
+        if (gfc_input_command_down("exit")) _done = 1;
+        deltaTime = game_frame_delay();
     }    
     vkDeviceWaitIdle(gf3d_vgraphics_get_default_logical_device());    
 
     // Cleanup
     hud_free(hud);
+    menu_free(menu);
     if (background_music) {
     Mix_FreeMusic(background_music);
 }
@@ -161,20 +197,26 @@ void parse_arguments(int argc,char *argv[])
     }    
 }
 
-void game_frame_delay()
+float game_frame_delay()
 {
     Uint32 diff;
     static Uint32 now;
     static Uint32 then;
+    float delta;
+    
     then = now;
-    slog_sync();// make sure logs get written when we have time to write it
+    slog_sync();
     now = SDL_GetTicks();
     diff = (now - then);
+    
+    delta = diff / 1000.0f;  // Convert milliseconds to seconds
+    
     if (diff < frame_delay)
     {
         SDL_Delay(frame_delay - diff);
     }
-    fps = 1000.0/MAX(SDL_GetTicks() - then,0.001);
-//     slog("fps: %f",fps);
+    fps = 1000.0/MAX(SDL_GetTicks() - then, 0.001);
+    
+    return delta;  // Return delta time in seconds
 }
 /*eol@eof*/

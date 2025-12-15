@@ -4,14 +4,18 @@
 #include "world.h"
 
 // Constants
-#define PLAYER_RADIUS        	1.0f
-#define DOWN_RAY_ABOVE       	1.0f
-#define DOWN_RAY_BELOW       	2.0f
+// #define PLAYER_RADIUS     	    1.0f;
+// #define DOWN_RAY_ABOVE       	1.0f
+// #define DOWN_RAY_BELOW       	2.0f
 #define PENETRATION_TOLERANCE 	0.05f
 #define REST_TOLERANCE       	0.02f
 
 #define JUMP_STRENGTH        	1.1f
 #define MOVE_SPEED           	0.5f
+
+#define SPEED_BOOST_DURATION    2.0f   // Boost lasts 2 seconds
+#define SPEED_BOOST_COOLDOWN    5.0f   // 5 second cooldown
+#define SPEED_BOOST_MULTIPLIER  2.0f   // 2x speed
 
 static Entity* thePlayer;
 
@@ -35,6 +39,12 @@ void player_data_new(PlayerData* data) {
     data->carInventory = gfc_list_new();
     data->carIndex = 0;
     data->carIndexMax = 0;
+
+     // Speed boost initialization
+    data->speedBoostActive = 0;
+    data->speedBoostTimer = 0.0f;
+    data->speedBoostCooldown = 0.0f;
+    data->speedBoostMultiplier = 2.0f;  // 2x for now
 }
 
 Entity* player_spawn(GFC_Vector3D position, GFC_Color color) {
@@ -59,6 +69,8 @@ Entity* player_spawn(GFC_Vector3D position, GFC_Color color) {
     self->rotation = gfc_vector3d(0, 0, -2 * GFC_PI);
     self->scale = gfc_vector3d(1, 1, 1);
 
+    self->drawShadow = 1;  //Enable shadows
+
     self->think = player_think;
     self->update = player_update;
 
@@ -67,53 +79,94 @@ Entity* player_spawn(GFC_Vector3D position, GFC_Color color) {
 }
 
 // --- Player movement logic ---
-void player_think(Entity* self) {
+void player_think(Entity* self, float deltaTime) {
     if (!self) return;
     PlayerData* pdata = (PlayerData*)self->data;
     if (!pdata) return;
-
+    
     GFC_Vector2D direction2d;
     float move = 0;
-    const float moveStep = 0.09f;
+    float moveStep = 0.09f;
     const float turnStep = 0.03f;
+    
+    //////////////////////////////////
+    //========= SPEED BOOST ========/
+    /////////////////////////////////
 
-    Uint8 jumpThisFrame = 0;
+    // Update boost timer
+    if (pdata->speedBoostTimer > 0) {
+        pdata->speedBoostTimer -= deltaTime;
+        if (pdata->speedBoostTimer <= 0) {
+            pdata->speedBoostActive = 0;
+            pdata->speedBoostTimer = 0;
+            slog("Speed boost ended");
+        }
+    }
+    
+    // Update cooldown timer
+    if (pdata->speedBoostCooldown > 0) {
+        pdata->speedBoostCooldown -= deltaTime;
+        if (pdata->speedBoostCooldown < 0) {
+            pdata->speedBoostCooldown = 0;
+        }
+    }
+    
+    // Activate speed boost
+    if (gfc_input_command_down("boost") && 
+        pdata->speedBoostCooldown <= 0 && 
+        !pdata->speedBoostActive) {
+        pdata->speedBoostActive = 1;
+        pdata->speedBoostTimer = SPEED_BOOST_DURATION;
+        pdata->speedBoostCooldown = SPEED_BOOST_COOLDOWN;
+        slog("Speed boost activated!");
+    }
+    ///////////////////////////////////
+    // ========== MOVEMENT ==========//
+    ///////////////////////////////////
 
+    // Apply speed multiplier if boost is active
+    if (pdata->speedBoostActive) {
+        moveStep *= SPEED_BOOST_MULTIPLIER;
+        // Visual feedback - orange color when boosting
+        self->color = gfc_color(1.0f, 0.5f, 0.0f, 1.0f);
+    } else {
+        // Normal white color
+        self->color = GFC_COLOR_WHITE;
+    }
+    
     // Rotate left/right
     if (gfc_input_command_down("panleft"))  self->rotation.z += turnStep;
     if (gfc_input_command_down("panright")) self->rotation.z -= turnStep;
-
-    // Forward/back
+    
+    // Forward/back movement
     direction2d = gfc_vector2d_from_angle(self->rotation.z);
     gfc_vector2d_normalize(&direction2d);
+    
     if (gfc_input_command_down("moveforward")) move += moveStep;
     if (gfc_input_command_down("moveback"))    move -= moveStep;
-
+    
     if (move != 0) {
         GFC_Vector3D force = { direction2d.x * move, direction2d.y * move, 0 };
         physics_add_force(self, force);
     }
-
-   if (gfc_input_command_down("jump") && pdata && pdata->onGround) {
-    self->velocity.z = JUMP_STRENGTH;
-    pdata->onGround = 0; // immediately leave ground
+    
+    // Jump
+    if (gfc_input_command_down("jump") && pdata && pdata->onGround) {
+        self->velocity.z = JUMP_STRENGTH;
+        pdata->onGround = 0;
+    }
+    
+    // Apply physics
+    physics_apply(self, pdata->onGround, 0);
 }
 
 
-    // Physics handling (ignore gravity if jump just happened)
-    physics_apply(self, pdata->onGround, jumpThisFrame);
-
-    // Move entity
-    entity_move(self);
-}
-
-
-void player_update(Entity* self) {
+void player_update(Entity* self, float deltaTime) {
     if (!self) return;
     PlayerData* pdata = (PlayerData*)self->data;
     if (!pdata) return;
 	// slog("Player position: x=%.2f, y=%.2f, z=%.2f", self->position.x, self->position.y, self->position.z);
-    // --- Respawn if fallen too far ---
+    // Contained game world magic here (ligit just set player location back to origin)
     if (self->position.z < -100.0f) { // threshold
 		slog("here");
         self->position = pdata->spawnPoint;
@@ -121,6 +174,6 @@ void player_update(Entity* self) {
         pdata->onGround = 0; // reset grounded state
     }
 
-    // --- Normal update / think ---
-    if (self->think) self->think(self);
+    entity_move(self); // move the entity player
+    
 }
