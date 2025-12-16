@@ -30,6 +30,8 @@
 #include "camera_entity.h"
 #include "gfc_audio.h"
 #include "hud.h"
+#include "lap_manager.h"
+#include "pickup.h"
 
 
 extern int __DEBUG;
@@ -79,6 +81,8 @@ int main(int argc,char *argv[])
     gf2d_font_init("config/font.cfg");
     gf2d_actor_init(1000);
     entity_system_init(100);
+    // lap manager init
+    lap_manager_init();
     // particles init 
     gf3d_particle_system_init(1000);  // Max 1000 particles
     //audio init
@@ -103,13 +107,15 @@ int main(int argc,char *argv[])
     testworld = world_load("defs/terrain/terrain1.def");
     gfc_matrix4_identity(testworldID);
 
+    lap_manager_spawn_pickups(testworld, MAX_PICKUPS_PER_LAP);
+    slog("Initial pickups spawned");
+
     background_music = gfc_sound_load_music("music/arcade-beat-323176.mp3");
     if (background_music) {
         Mix_PlayMusic(background_music, -1);
         Mix_VolumeMusic(64);
     }
-    
-    // main game loop    
+     
     // main game loop    
 while(!_done)
 {
@@ -127,6 +133,9 @@ while(!_done)
             slog("Starting game...");
             playerEntity = player_spawn(gfc_vector3d(0, 0, 20), GFC_COLOR_WHITE);
             ce = camera_entity_new();
+            
+            // Initialize lap system and spawn first pickups 
+            lap_manager_spawn_pickups(testworld, MAX_PICKUPS_PER_LAP);
         }
     }
     
@@ -143,7 +152,54 @@ while(!_done)
             gf3d_particle_update_rain(deltaTime, player->position);
         }
         
-        // Manual explosion burst for testing
+        // UPDATE LAP MANAGER (ADD THIS)
+        lap_manager_update();
+        
+        // CHECK FOR LAP COMPLETION AND WORLD TRANSITION (ADD THIS)
+        LapManager* lapMgr = lap_manager_get();
+        if (lapMgr && lapMgr->lapComplete && !lapMgr->raceComplete) {
+            slog("Lap %d complete! Loading next world...", lapMgr->currentLap);
+            
+            // Free current world
+            world_free(testworld);
+            testworld = NULL;
+            
+            // Advance to next lap
+            lap_manager_next_lap();
+            
+            // Load next world
+            testworld = world_load(lapMgr->nextWorldFile);
+            if (testworld) {
+                gfc_matrix4_identity(testworldID);
+                
+                // Respawn player at start position
+                if (player) {
+                    PlayerData* pd = (PlayerData*)player->data;
+                    if (pd) {
+                        player->position = pd->spawnPoint;
+                        player->velocity = gfc_vector3d(0, 0, 0);
+                        if (pd->onGround) pd->onGround = 0;
+                    }
+                }
+                
+                // Spawn new pickups for the new lap
+                lap_manager_spawn_pickups(testworld, MAX_PICKUPS_PER_LAP);
+                
+                slog("Lap %d started!", lapMgr->currentLap);
+            } else {
+                slog("ERROR: Failed to load world: %s", lapMgr->nextWorldFile);
+                slog("Make sure terrain def files exist!");
+            }
+        }
+        
+        // Check for race completion (ADD THIS)
+        if (lapMgr && lapMgr->raceComplete) {
+            slog("RACE COMPLETE! YOU WIN!");
+            // TODO: You could add victory screen, return to menu, etc.
+            // For now, just log it
+        }
+        
+        // Manual explosion burst for testing (keep this)
         if (gfc_input_command_pressed("spawn_particles")) {
             Entity* player = get_the_player();
             if (player) {
@@ -194,6 +250,7 @@ vkDeviceWaitIdle(gf3d_vgraphics_get_default_logical_device());
 if (background_music) {
     Mix_FreeMusic(background_music);
 }
+lap_manager_close();  // Already there - good!
 hud_free(hud);
 menu_free(menu);
 gf3d_particle_system_close();

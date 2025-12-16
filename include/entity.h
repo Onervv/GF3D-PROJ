@@ -12,11 +12,17 @@
 #define PENETRATION_TOLERANCE 	0.05f   // buffer to prevent jitter when snapping to ground
 #define REST_TOLERANCE       	0.02f   // how close to ground before stopping Z velocity
 #define GRAVITY                -0.02f   // downward acceleration per frame
-// #define JUMP_STRENGTH        	0.5f    // initial velocity when jumping
-// #define MOVE_SPEED           	0.05f   // forward/backward movement speed
+#define PICKUP_RADIUS 			2.0f  	// Collection distance
+
+typedef enum {
+    ENTITY_TYPE_PLAYER = 0,
+    ENTITY_TYPE_PICKUP = 1,
+    ENTITY_TYPE_OTHER = 2
+} EntityType;
 
 typedef struct Entity_S {
 	Uint8 _inuse;
+	EntityType type;
 	GFC_TextLine name;
 	Mesh* mesh;
 	Texture* texture;

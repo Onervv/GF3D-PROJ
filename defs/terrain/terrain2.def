@@ -1,7 +1,7 @@
 {
 	"world":
 	{
-		"filename": "models/terrain/Track2.obj",
+		"filename": "models/terrain/RaceTrack.obj",
 		"texture": "models/terrain/TrackUV.png",
 		"color": [ 255, 255, 255, 255 ],
 		"lightPosition": [ 5, 0, 75 ]

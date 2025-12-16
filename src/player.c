@@ -7,9 +7,6 @@
 
 
 // Constants
-// #define PLAYER_RADIUS     	    1.0f;
-// #define DOWN_RAY_ABOVE       	1.0f
-// #define DOWN_RAY_BELOW       	2.0f
 #define PENETRATION_TOLERANCE 	0.05f
 #define REST_TOLERANCE       	0.02f
 
@@ -19,6 +16,10 @@
 #define SPEED_BOOST_DURATION    2.0f   // Boost lasts 2 seconds
 #define SPEED_BOOST_COOLDOWN    5.0f   // 5 second cooldown
 #define SPEED_BOOST_MULTIPLIER  2.0f   // 2x speed
+
+#define JUMP_BOOST_DURATION    2.0f   // Boost lasts 2 seconds
+#define JUMP_BOOST_COOLDOWN    5.0f   // 5 second cooldown
+#define JUMP_BOOST_MULTIPLIER  2.0f   // 2x speed
 
 static Entity* thePlayer;
 
@@ -48,6 +49,12 @@ void player_data_new(PlayerData* data) {
     data->speedBoostTimer = 0.0f;
     data->speedBoostCooldown = 0.0f;
     data->speedBoostMultiplier = 2.0f;  // 2x for now
+
+    // Jump boost init
+    data->jumpBoostActive = 0;
+    data->jumpBoostTimer = 0.0f;
+    data->jumpBoostCooldown = 0.0f;
+    data->jumpBoostMultiplier = 2.0f; // 2x for now
 }
 
 Entity* player_spawn(GFC_Vector3D position, GFC_Color color) {
@@ -91,10 +98,11 @@ void player_think(Entity* self, float deltaTime) {
     float move = 0;
     float moveStep = 0.09f;
     const float turnStep = 0.03f;
+    float jumpStrength = JUMP_STRENGTH;  // ADD THIS LINE - base jump strength
     
     //////////////////////////////////
-    //========= SPEED BOOST ========/
-    /////////////////////////////////
+    //========= SPEED BOOST ========//
+    //////////////////////////////////
 
     // Update boost timer
     if (pdata->speedBoostTimer > 0) {
@@ -123,10 +131,47 @@ void player_think(Entity* self, float deltaTime) {
         pdata->speedBoostCooldown = SPEED_BOOST_COOLDOWN;
         slog("Speed boost activated!");
     }
+
+    //////////////////////////////////
+    //========= JUMP BOOST =========//
+    //////////////////////////////////
+
+    // Update boost timer
+    if (pdata->jumpBoostTimer > 0) {
+        pdata->jumpBoostTimer -= deltaTime;
+        if (pdata->jumpBoostTimer <= 0) {
+            pdata->jumpBoostActive = 0;
+            pdata->jumpBoostTimer = 0;
+            slog("Jump boost ended");
+        }
+    }
+    
+    // Update cooldown timer
+    if (pdata->jumpBoostCooldown > 0) {
+        pdata->jumpBoostCooldown -= deltaTime;
+        if (pdata->jumpBoostCooldown < 0) {
+            pdata->jumpBoostCooldown = 0;
+        }
+    }
+    
+    // Activate jump boost with particle explosion (spawn_particles command)
+    if (gfc_input_command_pressed("spawn_particles") &&  // Changed to pressed (single trigger)
+        pdata->jumpBoostCooldown <= 0 && 
+        !pdata->jumpBoostActive) {
+        pdata->jumpBoostActive = 1;
+        pdata->jumpBoostTimer = JUMP_BOOST_DURATION;
+        pdata->jumpBoostCooldown = JUMP_BOOST_COOLDOWN;
+        
+        // Spawn particle explosion when activating
+        gf3d_particle_spawn_explosion(self->position, 50);
+        slog("Jump boost activated with explosion!");
+    }
+
     ///////////////////////////////////
     // ========== MOVEMENT ==========//
     ///////////////////////////////////
 
+    // Apply speed boost to movement
     if (pdata->speedBoostActive) {
         moveStep *= SPEED_BOOST_MULTIPLIER;
         self->color = gfc_color(1.0f, 0.5f, 0.0f, 1.0f);  // Orange
@@ -136,17 +181,24 @@ void player_think(Entity* self, float deltaTime) {
             gf3d_particle_spawn(
                 self->position,
                 gfc_vector3d(
-                    (rand() % 40 - 20) / 20.0f,  // Small random spread
                     (rand() % 40 - 20) / 20.0f,
-                    0.5f + (rand() % 30) / 100.0f  // Slight upward: 0.5-0.8
+                    (rand() % 40 - 20) / 20.0f,
+                    0.5f + (rand() % 30) / 100.0f
                 ),
                 gfc_color(1.0f, 0.5f, 0.0f, 1.0f),  // Orange
-                0.8f,  // duration of fade
-                1.0f   // size
+                0.8f,
+                1.0f
             );
         }
     } else {
         self->color = GFC_COLOR_WHITE;
+    }
+
+    // Apply jump boost multiplier (ADD THIS)
+    if (pdata->jumpBoostActive) {
+        jumpStrength *= JUMP_BOOST_MULTIPLIER;
+        // Optional: Add visual indicator for jump boost
+        self->color = gfc_color(0.5f, 0.5f, 1.0f, 1.0f);  // Blue tint
     }
 
     // Rotate left/right
@@ -165,10 +217,28 @@ void player_think(Entity* self, float deltaTime) {
         physics_add_force(self, force);
     }
     
-    // Jump
+    // Jump with multiplier applied (MODIFIED THIS)
     if (gfc_input_command_down("jump") && pdata && pdata->onGround) {
-        self->velocity.z = JUMP_STRENGTH;
+        self->velocity.z = jumpStrength;  // Use the calculated jump strength
         pdata->onGround = 0;
+        
+        // Optional: Spawn particles on jump
+        if (pdata->jumpBoostActive) {
+            // Spawn extra particles for boosted jump
+            for (int i = 0; i < 10; i++) {
+                gf3d_particle_spawn(
+                    self->position,
+                    gfc_vector3d(
+                        (rand() % 100 - 50) / 50.0f,
+                        (rand() % 100 - 50) / 50.0f,
+                        -0.5f  // Downward particles
+                    ),
+                    gfc_color(0.5f, 0.5f, 1.0f, 1.0f),  // Blue
+                    0.5f,
+                    0.5f
+                );
+            }
+        }
     }
     
     // Apply physics

@@ -24,6 +24,12 @@ typedef struct {
     float           speedBoostCooldown;  // Cooldown before can boost again
     float           speedBoostMultiplier; // Velocity mult
 
+	// Jump Boost Ability
+	Uint8           jumpBoostActive;    // Activity flag
+    float           jumpBoostTimer;     // Time remaining on jump buff
+    float           jumpBoostCooldown;  // Cooldown before can jump again
+    float           jumpBoostMultiplier; // Velocity mult
+
 }PlayerData;
 
 Entity* get_the_player();
