@@ -1,7 +1,10 @@
+#include "physics.h"
 #include "player.h"
 #include "simple_logger.h"
 #include "gfc_input.h"
 #include "world.h"
+#include "gf3d_particle.h"
+
 
 // Constants
 // #define PLAYER_RADIUS     	    1.0f;
@@ -124,16 +127,28 @@ void player_think(Entity* self, float deltaTime) {
     // ========== MOVEMENT ==========//
     ///////////////////////////////////
 
-    // Apply speed multiplier if boost is active
     if (pdata->speedBoostActive) {
         moveStep *= SPEED_BOOST_MULTIPLIER;
-        // Visual feedback - orange color when boosting
-        self->color = gfc_color(1.0f, 0.5f, 0.0f, 1.0f);
+        self->color = gfc_color(1.0f, 0.5f, 0.0f, 1.0f);  // Orange
+        
+        // Spawn trail particles while boosting
+        if (rand() % 3 == 0) {  // 33% chance each frame
+            gf3d_particle_spawn(
+                self->position,
+                gfc_vector3d(
+                    (rand() % 40 - 20) / 20.0f,  // Small random spread
+                    (rand() % 40 - 20) / 20.0f,
+                    0.5f + (rand() % 30) / 100.0f  // Slight upward: 0.5-0.8
+                ),
+                gfc_color(1.0f, 0.5f, 0.0f, 1.0f),  // Orange
+                0.8f,  // duration of fade
+                1.0f   // size
+            );
+        }
     } else {
-        // Normal white color
         self->color = GFC_COLOR_WHITE;
     }
-    
+
     // Rotate left/right
     if (gfc_input_command_down("panleft"))  self->rotation.z += turnStep;
     if (gfc_input_command_down("panright")) self->rotation.z -= turnStep;

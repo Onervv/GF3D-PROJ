@@ -283,15 +283,25 @@ VkVertexInputBindingDescription* gf3d_mesh_get_bind_description() {
 }
 
 void gf3d_mesh_free(Mesh* mesh) {
-    /*
-    GFC_TextLine        filename;
-    Uint32              _refCount;
-    Uint8               _inuse;
-    GFC_List* primitives;
-    GFC_Box             bounds; */
-
-    gfc_list_delete(mesh->primitives);
-    free(mesh);
+    if (!mesh) return;
+    
+    // Free all primitives and their Vulkan resources
+    if (mesh->primitives) {
+        int count = gfc_list_get_count(mesh->primitives);
+        for (int i = 0; i < count; i++) {
+            MeshPrimitive* prim = (MeshPrimitive*)gfc_list_get_nth(mesh->primitives, i);
+            if (prim) {
+                gf3d_mesh_primitive_free(prim);
+            }
+        }
+        gfc_list_delete(mesh->primitives);
+        mesh->primitives = NULL;
+    }
+    
+    // DON'T free(mesh) - it's from the pooled array!
+    // Just mark it as unused
+    memset(mesh, 0, sizeof(Mesh));  // Clear the struct
+    // mesh->_inuse is now 0, so it can be reused
 }
 
 void gf3d_mesh_primitive_create_vertex_buffer(MeshPrimitive* primitive) {
