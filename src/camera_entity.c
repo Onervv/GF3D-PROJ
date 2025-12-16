@@ -4,7 +4,7 @@
 #include "camera_entity.h"
 #include "player.h" // Use to track player data
 
-static CameraEntity* ce;  // static (file scope) 
+static CameraEntity* ce;  
 
 CameraEntity* camera_entity_new() {
 	ce = gfc_allocate_array(sizeof(CameraEntity), 1);
@@ -33,40 +33,48 @@ void camera_think(CameraEntity* ce) {
     gfc_vector2d_normalize(&direction2d);
 
     // --- Base camera offset ---
-    GFC_Vector3D positionOffset = gfc_vector3d(-20, -30, 8);
-    ce->target = ce->player->position; // Always look at player
+    // Moved Z to 8 for a better default view
+    GFC_Vector3D positionOffset = gfc_vector3d(-20, -30, 8); 
+    ce->target = ce->player->position;
 
-    // --- Vertical adjustment (zoom in/out or tilt up/down) ---
+    // --- Vertical adjustment ---
     if (gfc_input_command_down("panup")) ce->zOffset += 0.3f;
     if (gfc_input_command_down("pandown")) ce->zOffset -= 0.3f;
- 	ce->zOffset = clamp(ce->zOffset, -2, 14);
+    ce->zOffset = clamp(ce->zOffset, -2, 14);
 
-    // --- Horizontal "lean" effect when panning ---
+    // --- SMOOTH HORIZONTAL LEAN ---
     static float cameraLean = 0.0f;
-    const float leanAmount = 5.0f;     // how far the camera can lean left/right
-    const float leanSpeed = 0.35f;     // how fast the camera leans
+    const float leanAmount = 8.0f;     // Increased range slightly for better visibility
+    const float leanSmooth = 0.15f;    // Lower = smoother easing at the end
+    const float maxSpeed = 3.0f;       // The "Speed Limit" per frame
 
-    // Smooth lean target based on player input
+    
+    float targetLean = 0.0f;
     if (gfc_input_command_down("panleft")) {
-        cameraLean += (leanAmount - cameraLean) * leanSpeed;
+        targetLean = leanAmount;
     } else if (gfc_input_command_down("panright")) {
-        cameraLean += (-leanAmount - cameraLean) * leanSpeed;
-    } else {
-        // Ease back to center when no pan input
-        cameraLean += (0.0f - cameraLean) * leanSpeed;
+        targetLean = -leanAmount;
     }
 
-    // Compute sideways vector (perpendicular to forward)
+    
+    float diff = targetLean - cameraLean;
+
+    float step = diff * leanSmooth;
+
+    
+    if (step > maxSpeed) step = maxSpeed;
+    if (step < -maxSpeed) step = -maxSpeed;
+
+    
+    cameraLean += step;
+
     GFC_Vector2D rightDir = { -direction2d.y, direction2d.x };
 
-    // Apply lean offset to camera position
     ce->position.x = ce->player->position.x + (direction2d.x * positionOffset.x) + (rightDir.x * cameraLean);
     ce->position.y = ce->player->position.y + (direction2d.y * positionOffset.y) + (rightDir.y * cameraLean);
     ce->position.z = ce->player->position.z + positionOffset.z;
 
-    // Raise target by z offset
     ce->target.z += ce->zOffset;
 
-    // --- Apply final look ---
     gf3d_camera_look_at(ce->target, &ce->position);
 }

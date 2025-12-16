@@ -22,8 +22,13 @@ typedef struct {
     GFC_Vector2D fuelPos;
     GFC_Vector2D fuelScale;
     int currentFuelFrame;
-    Uint8 fuelIsLeaking;  // Flag for which animation to use
-    float fuelAnimTimer;  // Timer for idle animation
+    Uint8 fuelIsLeaking;
+    float fuelAnimTimer;
+    
+    // Lap counter (NEW)
+    GFC_Vector2D lapTextPos;
+    char lapText[64];
+    char pickupText[64];
     
 } HUD;
 

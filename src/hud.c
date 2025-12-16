@@ -2,6 +2,8 @@
 #include "gf2d_sprite.h"
 #include "player.h"
 #include "simple_logger.h"
+#include "lap_manager.h"
+#include "gf2d_font.h"
 
 HUD* hud_init() {
     HUD *hud = gfc_allocate_array(sizeof(HUD), 1);
@@ -42,12 +44,17 @@ HUD* hud_init() {
     hud->meterScale = gfc_vector2d(0.125f, 0.125f);
     hud->currentFrame = 0;
     
-    // Fuel gauge position & scale (adjust as needed)
-    hud->fuelPos = gfc_vector2d(0, 0);  
-    hud->fuelScale = gfc_vector2d(1.0f, 1.0f);
+    // Fuel gauge position & scale
+    hud->fuelPos = gfc_vector2d(0, 0);
+    hud->fuelScale = gfc_vector2d(1.0, 1.0f);
     hud->currentFuelFrame = 0;
     hud->fuelIsLeaking = 0;
     hud->fuelAnimTimer = 0.0f;
+    
+    // Lap counter position (top right) (NEW)
+    hud->lapTextPos = gfc_vector2d(1100, 10);  // Adjust based on your screen resolution
+    strcpy(hud->lapText, "Lap: 1/3");
+    strcpy(hud->pickupText, "Pickups: 0/8");
     
     return hud;
 }
@@ -74,27 +81,20 @@ void hud_update(HUD *hud, Entity *player) {
     if (frame >= SPEED_FRAMES) frame = SPEED_FRAMES - 1;
     hud->currentFrame = frame;
     
-    // Determine if boost is active or on cooldown
+    // ===== UPDATE FUEL GAUGE (existing code) =====
     if (pd->speedBoostActive || pd->speedBoostCooldown > 0) {
-        // LEAKING - show drain animation
         hud->fuelIsLeaking = 1;
         
-        // Calculate which leak frame to show based on cooldown/timer
         float fuelPercent;
-        
         if (pd->speedBoostActive) {
-            // During boost, show timer draining
-            fuelPercent = pd->speedBoostTimer / 3.0f;  // Assuming max boost time is 3 seconds
+            fuelPercent = pd->speedBoostTimer / 2.0f;
         } else {
-            // During cooldown, show refilling
-            fuelPercent = 1.0f - (pd->speedBoostCooldown / 5.0f);  // Assuming max cooldown is 5 seconds
+            fuelPercent = 1.0f - (pd->speedBoostCooldown / 5.0f);
         }
         
-        // Clamp to 0-1 range
         if (fuelPercent < 0.0f) fuelPercent = 0.0f;
         if (fuelPercent > 1.0f) fuelPercent = 1.0f;
         
-        // Map to leak frames (frame 0 = almost full, frame 9 = empty)
         int leakFrame = (int)((1.0f - fuelPercent) * (FUEL_LEAK_FRAMES - 1));
         if (leakFrame < 0) leakFrame = 0;
         if (leakFrame >= FUEL_LEAK_FRAMES) leakFrame = FUEL_LEAK_FRAMES - 1;
@@ -102,16 +102,22 @@ void hud_update(HUD *hud, Entity *player) {
         hud->currentFuelFrame = leakFrame;
         
     } else {
-        // IDLE - animate between idle frames
         hud->fuelIsLeaking = 0;
-        
-        // Cycle through idle frames every 0.2 seconds
-        hud->fuelAnimTimer += 0.016f;  // Assuming ~60 FPS (adjust based on your deltaTime)
+        hud->fuelAnimTimer += 0.016f;
         
         if (hud->fuelAnimTimer >= 0.2f) {
             hud->fuelAnimTimer = 0.0f;
             hud->currentFuelFrame = (hud->currentFuelFrame + 1) % FUEL_IDLE_FRAMES;
         }
+    }
+    
+    // ===== UPDATE LAP TEXT (NEW) =====
+    LapManager* lapMgr = lap_manager_get();
+    if (lapMgr) {
+        snprintf(hud->lapText, sizeof(hud->lapText), 
+                 "Lap: %d/%d", lapMgr->currentLap, TOTAL_LAPS);
+        snprintf(hud->pickupText, sizeof(hud->pickupText), 
+                 "Pickups: %d/%d", lapMgr->pickupsCollected, lapMgr->totalPickups);
     }
 }
 
@@ -125,23 +131,15 @@ void hud_draw(HUD *hud) {
             speedFrame,
             hud->meterPos,
             &hud->meterScale,
-            NULL, // rotation
-            NULL, // flip
-            NULL, // color
-            NULL, // frame
-            NULL, // extra
-            99    // layer
+            NULL, NULL, NULL, NULL, NULL, 99
         );
     }
     
     // Draw fuel gauge
     Sprite *fuelFrame = NULL;
-    
     if (hud->fuelIsLeaking) {
-        // Use leak animation
         fuelFrame = hud->fuelLeakFrames[hud->currentFuelFrame];
     } else {
-        // Use idle animation
         fuelFrame = hud->fuelIdleFrames[hud->currentFuelFrame];
     }
     
@@ -150,14 +148,16 @@ void hud_draw(HUD *hud) {
             fuelFrame,
             hud->fuelPos,
             &hud->fuelScale,
-            NULL, // rotation
-            NULL, // flip
-            NULL, // color
-            NULL, // frame
-            NULL, // extra
-            99    // layer
+            NULL, NULL, NULL, NULL, NULL, 99
         );
     }
+    
+    // Draw lap counter text
+    gf2d_font_draw_line_tag(hud->lapText, FT_H1, GFC_COLOR_WHITE, hud->lapTextPos);
+    
+    GFC_Vector2D pickupPos = hud->lapTextPos;
+    pickupPos.y += 30;  // Draw pickup text below lap text
+    gf2d_font_draw_line_tag(hud->pickupText, FT_H1, GFC_COLOR_WHITE, pickupPos);
 }
 
 void hud_free(HUD *hud) {
