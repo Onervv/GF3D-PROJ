@@ -66,9 +66,6 @@ int main(int argc,char *argv[])
     Entity *playerEntity = NULL;
     Menu* menu = NULL;
     
-    // Rain effect timer (ADD THIS)
-    static float rainSpawnTimer = 0.0f;
-    
     //initializtion    
     parse_arguments(argc,argv);
     init_logger("gf3d.log",0);
@@ -100,7 +97,7 @@ int main(int argc,char *argv[])
     ce = camera_entity_new();
 
     skybox = gf3d_mesh_load("models/sky/sky.obj");
-    skyTexture = gf3d_texture_load("models/sky/k0rILCL.png");
+    skyTexture = gf3d_texture_load("models/sky/bgflick.png");
     gfc_matrix4_identity(skyboxID);
 
     testworld = world_load("defs/terrain/terrain1.def");
