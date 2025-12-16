@@ -114,11 +114,6 @@ void menu_draw(Menu* menu) {
         
         GFC_Vector2D scale = gfc_vector2d(scaleVal, scaleVal);
 
-        // image is 1280x720 
-        float imageW = 1280.0f;
-        float imageH = 720.0f;
-
-
         GFC_Vector2D pos;
 
         pos.x =  0.5f;

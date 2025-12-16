@@ -1,5 +1,3 @@
-#warning "USING MENU.H"
-
 #ifndef __MENU_H__
 #define __MENU_H__
 
@@ -8,8 +6,8 @@
 #include "gfc_types.h"
 #include "gfc_shape.h"
 
-#define MENU_IDLE_FRAMES 10   // Number of idle animation frames
-#define MENU_HOVER_FRAMES 10  // Number of hover animation frames
+#define MENU_IDLE_FRAMES 1   // Number of idle animation frames
+#define MENU_HOVER_FRAMES 4  // Number of hover animation frames
 
 typedef enum {
     MENU_STATE_MAIN,

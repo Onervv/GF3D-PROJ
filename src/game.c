@@ -21,6 +21,7 @@
 #include "gf3d_swapchain.h"
 #include "gf3d_camera.h"
 #include "gf3d_mesh.h"
+#include "gf3d_particle.h"
 
 #include "menu.h"
 #include "entity.h"
@@ -50,8 +51,6 @@ void exitGame()
 int main(int argc,char *argv[])
 {
     //local variables
-    // Sprite *speedometer, *arrow;
-    // float theta = 0;
     GFC_Vector3D cam = { 0,-45,15 };
     GFC_Vector3D lightPos = { -10, 0, 25 };
 
@@ -67,6 +66,9 @@ int main(int argc,char *argv[])
     Entity *playerEntity = NULL;
     Menu* menu = NULL;
     
+    // Rain effect timer (ADD THIS)
+    static float rainSpawnTimer = 0.0f;
+    
     //initializtion    
     parse_arguments(argc,argv);
     init_logger("gf3d.log",0);
@@ -80,6 +82,8 @@ int main(int argc,char *argv[])
     gf2d_font_init("config/font.cfg");
     gf2d_actor_init(1000);
     entity_system_init(100);
+    // particles init 
+    gf3d_particle_system_init(1000);  // Max 1000 particles
     //audio init
     gfc_audio_init(256,1,1);
     //hud init
@@ -87,101 +91,119 @@ int main(int argc,char *argv[])
     //game init
     srand(SDL_GetTicks());
     slog_sync();
-    // Declare sprites here, trying to refactor this
-    // speedometer = gf2d_sprite_load_image("images/ui/speedometer/SpeedWheel.png");
+    
     gf2d_mouse_load("actors/mouse.actor");
     gf3d_camera_look_at(gfc_vector3d(0, 0, 0), &cam);
-    // idk
+    
     menu = menu_init();
-    // Spawn player with vertical offset to avoid ground clipping
     playerEntity = player_spawn(gfc_vector3d(0, 0, 20), GFC_COLOR_WHITE);
-    ce = camera_entity_new(); // Create camera entity to follow player
+    ce = camera_entity_new();
 
     skybox = gf3d_mesh_load("models/sky/sky.obj");
     skyTexture = gf3d_texture_load("models/sky/k0rILCL.png");
     gfc_matrix4_identity(skyboxID);
 
-    // Make Terrain and add file here
     testworld = world_load("defs/terrain/terrain1.def");
     gfc_matrix4_identity(testworldID);
 
-    // basic background music implementation
     background_music = gfc_sound_load_music("music/arcade-beat-323176.mp3");
-if (background_music) {
-    Mix_PlayMusic(background_music, -1);  // -1 = loop forever
-    Mix_VolumeMusic(64);  // Volume 0-128
-}
-    // main game loop    
-   while(!_done)
-    {
-        gfc_input_update();
-        SDL_GetKeyboardState(NULL);
-        gf2d_mouse_update();
-        gf2d_font_update();
-        
-        // Update menu
-        if (menu) {
-            menu_update(menu, deltaTime);
-            
-            // Check if game should start
-            if (menu_get_state(menu) == MENU_STATE_GAME && !playerEntity) {
-                slog("Starting game...");
-                // Spawn player when game starts
-                playerEntity = player_spawn(gfc_vector3d(0, 0, 20), GFC_COLOR_WHITE);
-                ce = camera_entity_new();
-            }
-        }
-        
-        // Only update game if player exists (game has started)
-        if (playerEntity) {
-            hud_update(hud, playerEntity);
-        }
-        
-        gf3d_camera_update_view();
-        gf3d_vgraphics_render_start();
-        
-        // Draw menu OR game
-        if (menu && menu_get_state(menu) == MENU_STATE_MAIN) {
-            // MAIN MENU - only draw menu
-            menu_draw(menu);
-            
-        } else {
-            // IN GAME - draw game world
-            entity_think_all(deltaTime);
-            entity_update_all(deltaTime);
-            if (ce) camera_think(ce);
-            
-            gf3d_mesh_sky_draw(skybox, skyboxID, GFC_COLOR_WHITE, skyTexture);
-            world_draw(testworld);
-            entity_draw_all(lightPos, GFC_COLOR_WHITE);
-            
-            if (playerEntity) {
-                hud_draw(hud);
-            }
-        }
-        
-        // Always draw mouse and UI text on top
-        gf2d_font_draw_line_tag("ctrl q", FT_H1, GFC_COLOR_WHITE, gfc_vector2d(10, 10));
-        gf2d_mouse_draw();
-        
-        gf3d_vgraphics_render_end();
-        
-        if (gfc_input_command_down("exit")) _done = 1;
-        deltaTime = game_frame_delay();
-    }    
-    vkDeviceWaitIdle(gf3d_vgraphics_get_default_logical_device());    
-
-    // Cleanup
-    hud_free(hud);
-    menu_free(menu);
     if (background_music) {
+        Mix_PlayMusic(background_music, -1);
+        Mix_VolumeMusic(64);
+    }
+    
+    // main game loop    
+    // main game loop    
+while(!_done)
+{
+    gfc_input_update();
+    SDL_GetKeyboardState(NULL);
+    gf2d_mouse_update();
+    gf2d_font_update();
+    
+    // Update menu
+    if (menu) {
+        menu_update(menu, deltaTime);
+        
+        // Check if game should start
+        if (menu_get_state(menu) == MENU_STATE_GAME && !playerEntity) {
+            slog("Starting game...");
+            playerEntity = player_spawn(gfc_vector3d(0, 0, 20), GFC_COLOR_WHITE);
+            ce = camera_entity_new();
+        }
+    }
+    
+    // Only update game if player exists (game has started)
+    if (playerEntity) {
+        hud_update(hud, playerEntity);
+        
+        // UPDATE PARTICLES
+        gf3d_particle_update(deltaTime);
+        
+        // UPDATE RAIN EFFECT
+        Entity* player = get_the_player();
+        if (player) {
+            gf3d_particle_update_rain(deltaTime, player->position);
+        }
+        
+        // Manual explosion burst for testing
+        if (gfc_input_command_pressed("spawn_particles")) {
+            Entity* player = get_the_player();
+            if (player) {
+                gf3d_particle_spawn_explosion(player->position, 50);
+                slog("Spawned explosion burst!");
+            }
+        }
+    }
+    
+    gf3d_camera_update_view();
+    gf3d_vgraphics_render_start();
+    
+    // Draw menu OR game
+    if (menu && menu_get_state(menu) == MENU_STATE_MAIN) {
+        menu_draw(menu);
+        
+    } else {
+        // IN GAME - draw game world
+        entity_think_all(deltaTime);
+        entity_update_all(deltaTime);
+        if (ce) camera_think(ce);
+        
+        gf3d_mesh_sky_draw(skybox, skyboxID, GFC_COLOR_WHITE, skyTexture);
+        world_draw(testworld);
+        entity_draw_all(lightPos, GFC_COLOR_WHITE);
+        
+        // DRAW PARTICLES (after entities, before HUD)
+        gf3d_particle_draw();
+        
+        if (playerEntity) {
+            hud_draw(hud);
+        }
+    }
+    
+    // Always draw mouse and UI text on top
+    gf2d_font_draw_line_tag("ctrl q", FT_H1, GFC_COLOR_WHITE, gfc_vector2d(10, 10));
+    gf2d_mouse_draw();
+    
+    gf3d_vgraphics_render_end();
+    
+    if (gfc_input_command_down("exit")) _done = 1;
+    deltaTime = game_frame_delay();
+}
+
+vkDeviceWaitIdle(gf3d_vgraphics_get_default_logical_device());
+
+// Cleanup
+if (background_music) {
     Mix_FreeMusic(background_music);
 }
-    //cleanup
-    slog("gf3d program end");
-    exit(0);
-    slog_sync();
-    return 0;
+hud_free(hud);
+menu_free(menu);
+gf3d_particle_system_close();
+
+slog("gf3d program end");
+slog_sync();
+return 0;
 }
 
 void parse_arguments(int argc,char *argv[])
